@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Extinction Simulation | EcosystemSim — Paraná River</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script src="./js/tailwind-config.js"></script>
+<link rel="stylesheet" href="./css/style.css"/>
+</head>
+<body class="flex min-h-screen">
+
+<!-- Sidebar -->
+<aside class="w-sidebar_width h-screen fixed left-0 top-0 bg-surface-container-low border-r border-outline-variant/10 flex flex-col py-container_margin z-50">
+  <div class="px-gutter mb-10">
+    <h1 class="font-headline-sm text-headline-sm font-bold text-primary tracking-tight">EcosystemSim</h1>
+    <p class="font-label-md text-label-md text-on-surface-variant opacity-60">Paraná River FW_001</p>
+  </div>
+  <nav class="flex-grow space-y-1">
+    <a id="nav-main" class="flex items-center gap-base px-gutter py-base bg-surface-container-highest text-primary border-l-4 border-primary" href="#" onclick="showView('main');return false;">
+      <span class="material-symbols-outlined">hub</span>
+      <span class="font-body-md text-body-md">네트워크 그래프</span>
+    </a>
+    <a id="nav-analysis" class="flex items-center gap-base px-gutter py-base text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#" onclick="showView('analysis');return false;">
+      <span class="material-symbols-outlined">account_tree</span>
+      <span class="font-body-md text-body-md">SCC 분석</span>
+    </a>
+    <a id="nav-compare" class="flex items-center gap-base px-gutter py-base text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#" onclick="showView('compare');return false;">
+      <span class="material-symbols-outlined">compare_arrows</span>
+      <span class="font-body-md text-body-md">3자 비교</span>
+    </a>
+  </nav>
+
+  <!-- Threshold control — used by 3-Way Compare -->
+  <div class="px-gutter mt-4">
+    <div class="bg-surface-container rounded-lg p-3 border border-outline-variant/20">
+      <p class="font-label-md text-label-md text-on-surface-variant mb-2">멸종 임계값</p>
+      <div class="flex items-center gap-2">
+        <input type="range" id="threshold-slider" min="0" max="0.9" step="0.05" value="0.7"
+          class="flex-1 accent-primary h-1"
+          oninput="onThresholdChange(this.value)"/>
+        <span id="threshold-val" class="font-data-mono text-data-mono text-primary w-10 text-right">70%</span>
+      </div>
+      <p class="text-[10px] text-on-surface-variant mt-1 opacity-60">먹이 손실에 따른 멸종 기준값 (3자 비교 적용)</p>
+    </div>
+  </div>
+</aside>
+
+<!-- Main -->
+<main id="main-view" class="ml-[260px] flex-grow flex flex-col min-h-screen">
+
+  <!-- Top bar -->
+  <header class="flex justify-between items-center w-full h-16 bg-surface border-b border-outline-variant/10 px-gutter sticky top-0 z-40">
+    <div class="flex items-center gap-gutter">
+      <h2 class="font-headline-md text-headline-md font-bold text-primary">먹이망 탐색기</h2>
+      <span class="font-label-md text-label-md text-on-surface-variant opacity-60">FW_001 · 파라나강, 브라질</span>
+    </div>
+    <div class="flex items-center gap-gutter">
+      <span class="font-label-md text-label-md text-on-surface-variant opacity-50">총 40종 · 먹이관계 181개</span>
+    </div>
+  </header>
+
+  <!-- Dashboard -->
+  <div class="p-gutter flex-grow grid grid-cols-12 gap-gutter">
+
+    <!-- Metric cards -->
+    <div class="col-span-12 grid grid-cols-4 gap-gutter">
+      <div class="glass-card p-card_padding rounded-xl flex flex-col justify-between border-l-4 border-primary">
+        <span class="font-label-md text-label-md text-on-surface-variant uppercase">종 / 먹이관계</span>
+        <div class="flex items-end justify-between mt-2">
+          <span class="text-[32px] leading-tight font-bold text-primary">40 <span class="text-[18px] text-on-surface-variant">/</span> 181</span>
+          <span class="material-symbols-outlined text-primary" style="font-variation-settings:'FILL' 1;">hub</span>
+        </div>
+        <p class="text-[10px] text-on-surface-variant mt-1 opacity-50">Species / Edges</p>
+      </div>
+      <div class="glass-card p-card_padding rounded-xl flex flex-col justify-between">
+        <span class="font-label-md text-label-md text-on-surface-variant uppercase">기초 생산자</span>
+        <div class="flex items-end justify-between mt-2">
+          <span class="text-[32px] leading-tight font-bold text-on-surface">4 <span class="text-[16px] text-on-surface-variant font-normal">/ 40</span></span>
+          <span class="material-symbols-outlined text-primary">eco</span>
+        </div>
+        <p class="text-[10px] text-on-surface-variant mt-1 opacity-50">Basal Producers</p>
+      </div>
+      <div class="glass-card p-card_padding rounded-xl flex flex-col justify-between">
+        <span class="font-label-md text-label-md text-on-surface-variant uppercase">소비자 종</span>
+        <div class="flex items-end justify-between mt-2">
+          <span class="text-[32px] leading-tight font-bold text-on-surface">36</span>
+          <span class="material-symbols-outlined text-secondary">set_meal</span>
+        </div>
+        <p class="text-[10px] text-on-surface-variant mt-1 opacity-50">Consumer Species</p>
+      </div>
+      <div class="glass-card p-card_padding rounded-xl flex flex-col justify-between">
+        <span class="font-label-md text-label-md text-on-surface-variant uppercase">평균 연결도</span>
+        <div class="flex items-end justify-between mt-2">
+          <span class="text-[32px] leading-tight font-bold text-on-surface">9.05</span>
+          <span class="material-symbols-outlined text-on-surface-variant">device_hub</span>
+        </div>
+        <p class="text-[10px] text-on-surface-variant mt-1 opacity-50">Avg. Degree</p>
+      </div>
+    </div>
+
+    <!-- Network Graph -->
+    <div class="col-span-12 lg:col-span-8 glass-card rounded-xl overflow-hidden flex flex-col" style="min-height:560px">
+      <div class="p-gutter border-b border-outline-variant/10 flex justify-between items-center bg-surface-container-low/50">
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined text-primary">hub</span>
+          <h3 class="font-headline-sm text-headline-sm">먹이망 네트워크</h3>
+          <span class="font-label-md text-label-md text-on-surface-variant opacity-60 ml-2">노드 클릭 시 종 정보 확인</span>
+        </div>
+        <div class="flex gap-2 items-center">
+          <!-- Legend -->
+          <div class="flex gap-3 text-[10px] font-label-md text-on-surface-variant">
+            <span class="flex items-center gap-1"><span class="inline-block w-2.5 h-2.5 rounded-full bg-[#4caf50]"></span>기초 생산자</span>
+            <span class="flex items-center gap-1"><span class="inline-block w-2.5 h-2.5 rounded-full bg-[#5b9bd5]"></span>소비자</span>
+          </div>
+          <button onclick="resetGraphView()" class="bg-surface-container-highest px-3 py-1 rounded text-xs font-label-md flex items-center gap-1 hover:bg-primary/20 transition-colors ml-2">
+            <span class="material-symbols-outlined text-sm">refresh</span> 초기화
+          </button>
+        </div>
+      </div>
+      <div class="flex-grow relative bg-[#001018]" id="graph-container">
+        <svg id="graph-svg"></svg>
+      </div>
+    </div>
+
+    <!-- Right panel: Species info -->
+    <div class="col-span-12 lg:col-span-4 flex flex-col gap-gutter">
+      <div class="glass-card rounded-xl flex flex-col flex-grow">
+        <div class="p-gutter border-b border-outline-variant/10 flex items-center justify-between">
+          <h3 class="font-label-md text-label-md font-bold text-on-surface tracking-wider uppercase">종 정보</h3>
+          <span id="info-badge" class="text-[10px] px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant">노드를 선택하세요</span>
+        </div>
+        <div id="info-panel" class="p-4 flex-grow overflow-y-auto">
+          <p class="text-on-surface-variant text-[12px] italic">종을 선택하면 상세 정보가 표시됩니다</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ── 3-Way Compare View ─────────────────────────────────────────────── -->
+<div id="compare-view" class="hidden flex flex-col" style="margin-left:260px;height:100vh;width:calc(100vw - 260px)">
+
+  <!-- Top bar -->
+  <header class="flex-none flex justify-between items-center h-14 bg-surface border-b border-outline-variant/10 px-gutter z-40">
+    <div>
+      <h2 class="font-headline-sm text-headline-sm font-bold text-primary">3-Way Robustness</h2>
+      <span class="font-label-md text-label-md text-on-surface-variant opacity-60 text-[11px]">BC · CI · SCC Bridge</span>
+    </div>
+    <div class="flex items-center gap-2 bg-surface-container-highest rounded-xl px-3 py-1.5 border border-outline-variant/20">
+      <button onclick="cmpReset()" class="p-1 text-on-surface-variant hover:text-primary transition-colors" title="Reset">
+        <span class="material-symbols-outlined text-[18px]">restart_alt</span>
+      </button>
+      <button onclick="cmpStepPrev()" class="p-1 text-on-surface-variant hover:text-primary transition-colors">
+        <span class="material-symbols-outlined text-[18px]">skip_previous</span>
+      </button>
+      <span class="font-label-md text-label-md text-on-surface-variant text-[11px]">Wave</span>
+      <input type="range" id="wave-slider" min="0" max="5" value="0"
+        class="w-32 accent-primary h-1" oninput="setWave(+this.value)"/>
+      <span id="wave-label" class="font-data-mono text-data-mono text-primary w-10 text-[12px]">0 / 5</span>
+      <button onclick="cmpStepNext()" class="p-1 text-on-surface-variant hover:text-primary transition-colors">
+        <span class="material-symbols-outlined text-[18px]">skip_next</span>
+      </button>
+      <button onclick="cmpEnd()" class="px-2 py-1 text-[10px] font-label-md bg-error/10 text-error rounded hover:bg-error/20 transition-colors border border-error/20">END</button>
+      <button onclick="cmpTogglePlay()" id="cmp-play-btn" class="p-1 text-on-surface-variant hover:text-primary transition-colors">
+        <span class="material-symbols-outlined text-[18px]">play_arrow</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- 3 panels stacked vertically, each panel horizontal -->
+  <div class="flex-1 flex flex-col gap-2 p-3 overflow-hidden">
+
+    <!-- BC Panel -->
+    <div class="flex-1 glass-card rounded-xl flex flex-row overflow-hidden min-h-0">
+      <!-- Graph left -->
+      <div id="bc-graph-container" class="flex-none relative bg-[#001018] border-r border-outline-variant/10" style="width:45%">
+        <svg id="bc-svg" width="100%" height="100%"></svg>
+      </div>
+      <!-- Info right -->
+      <div class="flex-1 flex flex-col overflow-hidden min-w-0">
+        <div class="flex-none flex items-center justify-between px-4 py-2 border-b border-outline-variant/10 bg-surface-container-low/40">
+          <div>
+            <h3 class="font-label-md text-label-md font-bold text-on-surface uppercase tracking-wider text-[11px]">BC Targeted</h3>
+            <p class="text-[10px] text-on-surface-variant">Betweenness Centrality</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <div id="bc-ranking-bar" class="flex flex-wrap gap-1"></div>
+            <div class="text-right leading-none border-l border-outline-variant/20 pl-3">
+              <span id="bc-alive" class="font-data-mono text-[20px] font-bold text-primary">40</span>
+              <span class="text-[10px] text-on-surface-variant"> / 40</span>
+              <p class="text-[9px] text-on-surface-variant uppercase tracking-wider">생존</p>
+            </div>
+          </div>
+        </div>
+        <div id="bc-ext-log" class="flex-1 overflow-y-auto px-4 py-2 space-y-1.5"></div>
+      </div>
+    </div>
+
+    <!-- CI Panel -->
+    <div class="flex-1 glass-card rounded-xl flex flex-row overflow-hidden min-h-0">
+      <div id="ci-graph-container" class="flex-none relative bg-[#001018] border-r border-outline-variant/10" style="width:45%">
+        <svg id="ci-svg" width="100%" height="100%"></svg>
+      </div>
+      <div class="flex-1 flex flex-col overflow-hidden min-w-0">
+        <div class="flex-none flex items-center justify-between px-4 py-2 border-b border-outline-variant/10 bg-surface-container-low/40">
+          <div>
+            <h3 class="font-label-md text-label-md font-bold text-on-surface uppercase tracking-wider text-[11px]">CI Targeted</h3>
+            <p class="text-[10px] text-on-surface-variant">Collective Influence (l=2)</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <div id="ci-ranking-bar" class="flex flex-wrap gap-1"></div>
+            <div class="text-right leading-none border-l border-outline-variant/20 pl-3">
+              <span id="ci-alive" class="font-data-mono text-[20px] font-bold text-primary">40</span>
+              <span class="text-[10px] text-on-surface-variant"> / 40</span>
+              <p class="text-[9px] text-on-surface-variant uppercase tracking-wider">생존</p>
+            </div>
+          </div>
+        </div>
+        <div id="ci-ext-log" class="flex-1 overflow-y-auto px-4 py-2 space-y-1.5"></div>
+      </div>
+    </div>
+
+    <!-- SCC Panel -->
+    <div class="flex-1 glass-card rounded-xl flex flex-row overflow-hidden min-h-0">
+      <div id="scc-graph-container" class="flex-none relative bg-[#001018] border-r border-outline-variant/10" style="width:45%">
+        <svg id="scc-svg" width="100%" height="100%"></svg>
+      </div>
+      <div class="flex-1 flex flex-col overflow-hidden min-w-0">
+        <div class="flex-none flex items-center justify-between px-4 py-2 border-b border-outline-variant/10 bg-surface-container-low/40">
+          <div>
+            <h3 class="font-label-md text-label-md font-bold text-on-surface uppercase tracking-wider text-[11px]">SCC Bridge</h3>
+            <p class="text-[10px] text-on-surface-variant">Strongly Connected Components</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <div id="scc-ranking-bar" class="flex flex-wrap gap-1"></div>
+            <div class="text-right leading-none border-l border-outline-variant/20 pl-3">
+              <span id="scc-alive" class="font-data-mono text-[20px] font-bold text-primary">40</span>
+              <span class="text-[10px] text-on-surface-variant"> / 40</span>
+              <p class="text-[9px] text-on-surface-variant uppercase tracking-wider">생존</p>
+            </div>
+          </div>
+        </div>
+        <div id="scc-ext-log" class="flex-1 overflow-y-auto px-4 py-2 space-y-1.5"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="flex-none px-3 pb-2">
+    <div class="glass-card rounded-lg px-4 py-2 flex items-center gap-5 flex-wrap">
+      <span class="font-label-md text-label-md text-on-surface-variant uppercase text-[10px]">Legend</span>
+      <span class="flex items-center gap-1.5 text-[11px]"><span class="w-2 h-2 rounded-full bg-[#26c6da] inline-block"></span>Alive</span>
+      <span class="flex items-center gap-1.5 text-[11px]"><span class="w-2 h-2 rounded-full bg-[#ef5350] inline-block"></span>Direct removal</span>
+      <span class="flex items-center gap-1.5 text-[11px]"><span class="w-2 h-2 rounded-full bg-[#ff7043] inline-block"></span>Cascade extinct (this step)</span>
+      <span class="flex items-center gap-1.5 text-[11px]"><span class="w-2 h-2 rounded-full bg-[#455a64] inline-block"></span>Previously extinct</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── SCC Analysis View ──────────────────────────────────────────────── -->
+<div id="analysis-view" class="hidden flex flex-col" style="margin-left:260px;height:100vh;width:calc(100vw - 260px)">
+
+  <!-- Header -->
+  <header class="flex-none flex justify-between items-center h-14 bg-surface border-b border-outline-variant/10 px-gutter z-40 flex-shrink-0">
+    <div>
+      <h2 class="font-headline-sm text-headline-sm font-bold text-primary">SCC 강연결 요소 분석</h2>
+      <span class="font-label-md text-label-md text-on-surface-variant opacity-60 text-[11px]">Tarjan vs Kosaraju 알고리즘 비교</span>
+    </div>
+    <div class="flex items-center gap-4">
+      <div class="flex gap-3">
+        <div class="text-center">
+          <p id="scc-total" class="font-data-mono text-[20px] font-bold text-primary leading-none">—</p>
+          <p class="text-[9px] text-on-surface-variant uppercase tracking-wider mt-0.5">총 SCC</p>
+        </div>
+        <div class="text-center border-l border-outline-variant/20 pl-3">
+          <p id="scc-nontrivial" class="font-data-mono text-[20px] font-bold text-error leading-none">—</p>
+          <p class="text-[9px] text-on-surface-variant uppercase tracking-wider mt-0.5">비자명 SCC</p>
+        </div>
+        <div class="text-center border-l border-outline-variant/20 pl-3">
+          <p id="scc-maxsize" class="font-data-mono text-[20px] font-bold text-secondary leading-none">—</p>
+          <p class="text-[9px] text-on-surface-variant uppercase tracking-wider mt-0.5">최대 크기</p>
+        </div>
+        <div class="text-center border-l border-outline-variant/20 pl-3">
+          <p id="scc-bridge" class="font-data-mono text-[20px] font-bold text-on-surface leading-none">—</p>
+          <p class="text-[9px] text-on-surface-variant uppercase tracking-wider mt-0.5">브리지 노드</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main: graph left + two algo panels right -->
+  <div class="flex-1 flex gap-2 p-3 overflow-hidden min-h-0">
+
+    <!-- SCC Network -->
+    <div class="flex-none glass-card rounded-xl overflow-hidden flex flex-col min-h-0" style="width:42%">
+      <div class="flex-none px-4 py-2.5 border-b border-outline-variant/10 bg-surface-container-low/40">
+        <h3 class="font-label-md text-label-md font-bold text-on-surface uppercase tracking-wider text-[11px]">SCC 네트워크</h3>
+        <p class="text-[10px] text-on-surface-variant mt-0.5">구역 = SCC 역할 &nbsp;|&nbsp; 버블 = SCC 묶음 &nbsp;|&nbsp; 주황 선 = 주요 연결</p>
+      </div>
+      <div id="scc-net-container" class="flex-1 bg-[#001018] relative min-h-0">
+        <svg id="scc-net-svg" width="100%" height="100%"></svg>
+      </div>
+    </div>
+
+    <!-- Algorithm panels -->
+    <div class="flex-1 flex flex-col gap-2 overflow-hidden min-h-0">
+
+      <div class="flex-none grid grid-cols-[1fr_1.18fr] gap-2" style="height:168px">
+        <div class="glass-card rounded-xl flex flex-col overflow-hidden min-h-0">
+          <div class="flex-none px-4 py-2 border-b border-outline-variant/10 bg-surface-container-low/40">
+            <h3 class="font-label-md text-label-md font-bold text-on-surface uppercase tracking-wider text-[11px]">SCC 해석</h3>
+          </div>
+          <div id="scc-meaning-panel" class="flex-1 p-3 text-[11px] text-on-surface-variant space-y-2 overflow-y-auto"></div>
+        </div>
+
+        <div class="glass-card rounded-xl flex flex-col overflow-hidden min-h-0">
+          <div class="flex-none px-4 py-2 border-b border-outline-variant/10 bg-surface-container-low/40 flex items-center justify-between">
+            <h3 class="font-label-md text-label-md font-bold text-on-surface uppercase tracking-wider text-[11px]">브리지 노드 랭킹</h3>
+            <span class="text-[10px] text-on-surface-variant">SCC 간 연결 수 기준</span>
+          </div>
+          <div id="bridge-rank-list" class="flex-1 overflow-y-auto px-3 py-2 space-y-1.5"></div>
+        </div>
+      </div>
+
+      <!-- Tarjan Panel -->
+      <div class="flex-1 glass-card rounded-xl flex flex-col overflow-hidden min-h-0">
+        <div class="flex-none flex items-center justify-between px-4 py-2 border-b border-outline-variant/10 bg-surface-container-low/40">
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] font-bold px-2 py-1 rounded bg-primary/15 text-primary border border-primary/25 font-label-md">TARJAN</span>
+            <div>
+              <p class="font-label-md text-label-md font-bold text-on-surface text-[11px]">단일 DFS · 스택 + lowlink</p>
+              <p class="text-[10px] text-on-surface-variant">발견 순서: <em>역위상 정렬</em> (싱크 SCC 먼저)</p>
+            </div>
+          </div>
+          <span class="text-[10px] text-on-surface-variant font-label-md">O(V+E)</span>
+        </div>
+        <div id="tarjan-scc-list" class="flex-1 overflow-y-auto text-[11px]"></div>
+      </div>
+
+      <!-- Kosaraju Panel -->
+      <div class="flex-1 glass-card rounded-xl flex flex-col overflow-hidden min-h-0">
+        <div class="flex-none flex items-center justify-between px-4 py-2 border-b border-outline-variant/10 bg-surface-container-low/40">
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] font-bold px-2 py-1 rounded bg-[#26c6da]/15 text-[#26c6da] border border-[#26c6da]/25 font-label-md">KOSARAJU</span>
+            <div>
+              <p class="font-label-md text-label-md font-bold text-on-surface text-[11px]">이중 DFS · 전치 그래프</p>
+              <p class="text-[10px] text-on-surface-variant">발견 순서: <em>위상 정렬</em> (소스 SCC 먼저)</p>
+            </div>
+          </div>
+          <span class="text-[10px] text-on-surface-variant font-label-md">O(V+E)</span>
+        </div>
+        <div id="kosaraju-scc-list" class="flex-1 overflow-y-auto text-[11px]"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="flex-none px-3 pb-2">
+    <div class="glass-card rounded-lg px-4 py-2 flex items-center gap-5 flex-wrap">
+      <span class="font-label-md text-label-md text-on-surface-variant uppercase text-[10px]">범례</span>
+      <span class="flex items-center gap-1.5 text-[11px]"><span class="w-2 h-2 rounded-full bg-[#4caf50] inline-block"></span>기초 생산자</span>
+      <span class="flex items-center gap-1.5 text-[11px]"><span class="w-2 h-2 rounded-full bg-[#5b9bd5] inline-block"></span>자명 SCC (크기 1)</span>
+      <span class="flex items-center gap-1.5 text-[11px]"><span class="w-2 h-2 rounded-full bg-[#ef5350] inline-block"></span>비자명 SCC (색상 = 그룹)</span>
+      <span class="flex items-center gap-1.5 text-[11px]"><span class="w-3.5 h-3.5 rounded-full border-2 border-dashed border-[#ff7043] inline-block"></span>브리지 노드 (SCC 간 연결)</span>
+    </div>
+  </div>
+</div>
+
+<script src="./js/data.js"></script>
+<script src="./js/graph-core.js"></script>
+<script src="./js/network-view.js"></script>
+<script src="./js/scc-analysis.js"></script>
+<script src="./js/view-router.js"></script>
+<script src="./js/metrics.js"></script>
+<script src="./js/comparison.js"></script>
+<script src="./js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,193 @@
+// ── State ──────────────────────────────────────────────────────────────────
+let graph = buildGraph();
+let simulation = null;
+
+// ── D3 Graph ──────────────────────────────────────────────────────────────
+const container = document.getElementById('graph-container');
+const svg = d3.select('#graph-svg');
+
+let width, height;
+function resize() {
+  width = container.clientWidth;
+  height = container.clientHeight;
+  svg.attr('viewBox', `0 0 ${width} ${height}`);
+}
+resize();
+window.addEventListener('resize', () => { resize(); if (simulation) simulation.force('center', d3.forceCenter(width/2, height/2)); });
+
+// Defs: arrowhead
+svg.append('defs').append('marker')
+  .attr('id','arrow').attr('viewBox','0 -4 8 8').attr('refX',14).attr('refY',0)
+  .attr('markerWidth',6).attr('markerHeight',6).attr('orient','auto')
+  .append('path').attr('d','M0,-4L8,0L0,4').attr('fill','rgba(161,212,148,0.3)');
+
+const linkLayer = svg.append('g').attr('class','links');
+const nodeLayer = svg.append('g').attr('class','nodes');
+
+function initGraph() {
+  resize();
+  linkLayer.selectAll('*').remove();
+  nodeLayer.selectAll('*').remove();
+
+  const edgesCopy = graph.edges.map(e => ({ ...e }));
+
+  simulation = d3.forceSimulation(graph.nodes)
+    .force('link', d3.forceLink(edgesCopy).id(d => d.id).distance(100).strength(0.4))
+    .force('charge', d3.forceManyBody().strength(-600))
+    .force('collision', d3.forceCollide(22))
+    .force('center', d3.forceCenter(width / 2, height / 2));
+
+  const link = linkLayer.selectAll('line')
+    .data(edgesCopy).join('line')
+    .attr('class','link-line')
+    .attr('stroke','rgba(161,212,148,0.25)')
+    .attr('stroke-width', d => Math.max(0.5, d.weight * 2))
+    .attr('marker-end','url(#arrow)');
+
+  const node = nodeLayer.selectAll('g')
+    .data(graph.nodes).join('g')
+    .attr('class','node-g')
+    .call(d3.drag()
+      .on('start', (event, d) => { if (!event.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
+      .on('drag', (event, d) => { d.fx = event.x; d.fy = event.y; })
+      .on('end', (event, d) => { if (!event.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; }))
+    .on('click', (event, d) => { showInfo(d.id); });
+
+  node.append('circle')
+    .attr('class','node-circle')
+    .attr('r', d => d.isBasal ? 7 : 5 + Math.min(d.outDeg, 14))
+    .attr('fill', d => nodeColor(d.id))
+    .attr('stroke', d => d.isBasal ? 'rgba(76,175,80,0.6)' : 'rgba(91,155,213,0.4)');
+
+  node.append('text')
+    .attr('dy', d => -(d.isBasal ? 10 : 7 + Math.min(d.outDeg, 14)))
+    .attr('text-anchor','middle')
+    .attr('fill','rgba(207,230,242,0.7)')
+    .attr('font-size','8px')
+    .attr('pointer-events','none')
+    .text(d => shortName(d.name));
+
+  simulation.on('tick', () => {
+    link.attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+        .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+    node.attr('transform', d => `translate(${d.x},${d.y})`);
+  });
+
+}
+
+function nodeColor(id) {
+  const n = graph.nodes[id];
+  if (n.isBasal) return '#4caf50';
+  return '#5b9bd5';
+}
+
+function updateColors() {
+  nodeLayer.selectAll('.node-circle').attr('fill', d => nodeColor(d.id));
+}
+
+function shortName(name) {
+  const p = name.split(' ');
+  if (p.length === 1 || name.startsWith('Other') || name.startsWith('Aquatic')) return name.length > 12 ? name.slice(0,10)+'…' : name;
+  return p[0][0] + '. ' + p.slice(1).join(' ');
+}
+
+// ── Graph View Reset ──────────────────────────────────────────────────────
+function resetGraphView() {
+  if (simulation) {
+    graph.nodes.forEach(n => { n.fx = null; n.fy = null; });
+    simulation.alpha(0.5).restart();
+  }
+}
+
+// ── Info Panel ──────────────────────────────────────────────────────────────
+async function showInfo(id) {
+  const n = graph.nodes[id];
+  const badge = document.getElementById('info-badge');
+  badge.textContent = n.isBasal ? '기초 생산자' : '소비자';
+  badge.className = `text-[10px] px-2 py-0.5 rounded ${n.isBasal ? 'bg-[#4caf50]/20 text-[#4caf50]' : 'bg-[#5b9bd5]/20 text-[#5b9bd5]'}`;
+
+  const preys = graph.edges.filter(e => {
+    const tgt = typeof e.target === 'object' ? e.target.id : e.target;
+    return tgt === id;
+  }).map(e => { const src = typeof e.source === 'object' ? e.source.id : e.source; return `<span class="text-[10px] bg-surface-container-highest px-1.5 py-0.5 rounded text-on-surface-variant">${shortName(SPECIES_NAMES[src])}</span>`; });
+  const preds = graph.edges.filter(e => {
+    const src = typeof e.source === 'object' ? e.source.id : e.source;
+    return src === id;
+  }).map(e => { const tgt = typeof e.target === 'object' ? e.target.id : e.target; return `<span class="text-[10px] bg-surface-container-highest px-1.5 py-0.5 rounded text-on-surface-variant">${shortName(SPECIES_NAMES[tgt])}</span>`; });
+
+  const wikiTitle = WIKI_TITLES[id];
+  const wikiUrl = `https://en.wikipedia.org/wiki/${wikiTitle}`;
+
+  // Render immediately with image placeholder
+  document.getElementById('info-panel').innerHTML = `
+    <div class="space-y-3">
+      <div class="flex flex-col gap-2">
+        <div id="wiki-img-wrap" class="w-full h-[160px] rounded-lg bg-surface-container-highest flex items-center justify-center overflow-hidden border border-outline-variant/20">
+          <span class="material-symbols-outlined text-on-surface-variant text-[40px] opacity-40" style="animation:pulse 1.5s infinite">image</span>
+        </div>
+        <div>
+          <p class="text-primary font-bold text-[13px] italic leading-tight">${n.name}</p>
+          <a href="${wikiUrl}" target="_blank" class="text-[10px] text-on-surface-variant hover:text-primary transition-colors">Wikipedia ↗</a>
+          <div class="flex gap-3 mt-1 text-[11px] text-on-surface-variant">
+            <span>유입: <strong class="text-on-surface">${n.inDeg}</strong></span>
+            <span>유출: <strong class="text-on-surface">${n.outDeg}</strong></span>
+            <span>${n.isBasal ? '<span class="text-[#4caf50]">기초 생산자</span>' : ''}</span>
+          </div>
+        </div>
+      </div>
+      ${!n.isBasal ? `<div><p class="text-[10px] text-on-surface-variant mb-1 uppercase tracking-wider">먹이 (${preys.length}종)</p><div class="flex flex-wrap gap-1">${preys.join('')}</div></div>` : ''}
+      <div><p class="text-[10px] text-on-surface-variant mb-1 uppercase tracking-wider">포식자 (${preds.length}종)</p><div class="flex flex-wrap gap-1">${preds.join('')}</div></div>
+    </div>`;
+
+  // 1차: Wikipedia, 2차: iNaturalist fallback
+  const wrap = document.getElementById('wiki-img-wrap');
+  if (!wrap) return;
+
+  function setImg(src, source) {
+    wrap.innerHTML = `
+      <div class="relative w-full h-full">
+        <img src="${src}" alt="${n.name}" class="w-full h-full object-cover"
+          onerror="this.closest('.relative').innerHTML=getFallbackSVG(${id})" />
+        <span class="absolute bottom-1 right-1 text-[9px] bg-black/50 text-white/60 px-1 rounded">${source}</span>
+      </div>`;
+  }
+
+  try {
+    const wRes = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(wikiTitle)}`);
+    const wData = await wRes.json();
+    if (wData.thumbnail?.source) { setImg(wData.thumbnail.source, 'Wikipedia'); return; }
+  } catch(e) {}
+
+  // iNaturalist fallback
+  try {
+    const iRes = await fetch(`https://api.inaturalist.org/v1/taxa?q=${encodeURIComponent(n.name)}&per_page=1&rank=species`);
+    const iData = await iRes.json();
+    const photo = iData.results?.[0]?.default_photo?.medium_url;
+    if (photo) { setImg(photo, 'iNaturalist'); return; }
+  } catch(e) {}
+
+  // SVG 실루엣 최종 fallback
+  wrap.innerHTML = getFallbackSVG(id);
+}
+
+function getFallbackSVG(id) {
+  const n = graph.nodes[id];
+  const name = n.name.toLowerCase();
+  let icon = 'set_meal'; // fish default
+  if (name.includes('insect')) icon = 'pest_control';
+  else if (name.includes('zooplankton') || name.includes('phytoplankton')) icon = 'water_drop';
+  else if (name.includes('benthos') || name.includes('detritus')) icon = 'compost';
+  else if (name.includes('macrophyte') || name.includes('periphyton')) icon = 'energy_savings_leaf';
+  else if (name.includes('omnivore') || name.includes('piscivore') || name.includes('insectivore')) icon = 'category';
+  return `<div class="w-full h-full flex flex-col items-center justify-center gap-2 bg-surface-container-highest">
+    <span class="material-symbols-outlined text-on-surface-variant text-[48px] opacity-30">${icon}</span>
+    <span class="text-[9px] text-on-surface-variant opacity-40">no image</span>
+  </div>`;
+}
+
+function getThreshold() { return parseFloat(document.getElementById('threshold-slider').value); }
+
+function onThresholdChange(val) {
+  const pct = parseFloat(val);
+  document.getElementById('threshold-val').textContent = pct === 0 ? 'Strict' : Math.round(pct * 100) + '%';
+}
