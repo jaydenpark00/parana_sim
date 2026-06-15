@@ -236,7 +236,7 @@ function renderSccList(containerId, sccs, bridgeSet, sccMeta, algo) {
         <div class="flex items-center gap-2 mb-1.5">
           <span class="font-label-md text-label-md text-on-surface-variant">자명 SCC (크기 1)</span>
           <span class="text-[10px] px-1.5 py-0.5 rounded bg-surface-container-highest text-on-surface-variant font-label-md">${trivial.length}개</span>
-          <span class="text-[9px] text-on-surface-variant opacity-50 ml-auto">발견 ${algo==='tarjan'?nonTrivial.length+1:1}~${sccs.length}번째</span>
+          ${algo === 'tarjan' ? `<span class="text-[9px] text-on-surface-variant opacity-50 ml-auto">발견 ${nonTrivial.length + 1}~${sccs.length}번째</span>` : ''}
         </div>
         <div class="flex flex-wrap gap-1">
           ${trivial.map(scc => {

@@ -81,10 +81,6 @@ function nodeColor(id) {
   return '#5b9bd5';
 }
 
-function updateColors() {
-  nodeLayer.selectAll('.node-circle').attr('fill', d => nodeColor(d.id));
-}
-
 function shortName(name) {
   const p = name.split(' ');
   if (p.length === 1 || name.startsWith('Other') || name.startsWith('Aquatic')) return name.length > 12 ? name.slice(0,10)+'…' : name;
@@ -183,24 +179,10 @@ async function showInfo(id) {
     fetch(`https://api.inaturalist.org/v1/taxa?q=${encodeURIComponent(n.name)}&per_page=1&rank=species`).then(r => r.json()).catch(() => null),
   ]);
 
-  // Description
+  // Description — SPECIES_DESC_KO 사용
   const descEl = document.getElementById('wiki-desc');
   if (descEl) {
-    let koText = SPECIES_DESC_KO[id];
-    if (wData?.extract) {
-      const sentences = wData.extract.split('. ').slice(0, 2).join('. ') + '.';
-      try {
-        const tRes = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(sentences)}&langpair=en|ko&de=jaydenpark9497@gmail.com`);
-        const tData = await tRes.json();
-        const translated = tData.responseData?.translatedText || '';
-        // 반복 패턴 감지: 같은 2글자 이상 토큰이 5번 이상 연속되면 오번역으로 판단
-        const isGarbled = /(.{2,})\1{4,}/.test(translated);
-        if (tData.responseStatus === 200 && translated && !isGarbled) {
-          koText = translated;
-        }
-      } catch(e) {}
-    }
-    descEl.textContent = koText;
+    descEl.textContent = SPECIES_DESC_KO[id];
     descEl.classList.remove('opacity-40');
   }
 
