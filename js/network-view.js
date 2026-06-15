@@ -127,7 +127,11 @@ async function showInfo(id) {
         </div>
         <div>
           <p class="text-primary font-bold text-[13px] italic leading-tight">${n.name}</p>
-          <a href="${wikiUrl}" target="_blank" class="text-[10px] text-on-surface-variant hover:text-primary transition-colors">Wikipedia ↗</a>
+          <div class="flex items-center gap-2 mt-0.5">
+            <a href="${wikiUrl}" target="_blank" class="text-[10px] text-on-surface-variant hover:text-primary transition-colors">Wikipedia ↗</a>
+            <span id="iucn-badge"></span>
+          </div>
+          <p id="wiki-desc" class="text-[11px] text-on-surface-variant leading-relaxed mt-1 opacity-40">불러오는 중…</p>
           <div class="flex gap-3 mt-1 text-[11px] text-on-surface-variant">
             <span>유입: <strong class="text-on-surface">${n.inDeg}</strong></span>
             <span>유출: <strong class="text-on-surface">${n.outDeg}</strong></span>
@@ -139,7 +143,6 @@ async function showInfo(id) {
       <div><p class="text-[10px] text-on-surface-variant mb-1 uppercase tracking-wider">포식자 (${preds.length}종)</p><div class="flex flex-wrap gap-1">${preds.join('')}</div></div>
     </div>`;
 
-  // 1차: Wikipedia, 2차: iNaturalist fallback
   const wrap = document.getElementById('wiki-img-wrap');
   if (!wrap) return;
 
@@ -152,21 +155,54 @@ async function showInfo(id) {
       </div>`;
   }
 
-  try {
-    const wRes = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(wikiTitle)}`);
-    const wData = await wRes.json();
-    if (wData.thumbnail?.source) { setImg(wData.thumbnail.source, 'Wikipedia'); return; }
-  } catch(e) {}
+  const iucnMap = {
+    'least concern':        ['LC · 관심대상', '#4caf50'],
+    'near threatened':      ['NT · 준위협',   '#8bc34a'],
+    'vulnerable':           ['VU · 취약',     '#ffc107'],
+    'endangered':           ['EN · 위기',     '#ff9800'],
+    'critically endangered':['CR · 위급',     '#f44336'],
+    'extinct in the wild':  ['EW · 야생절멸', '#9c27b0'],
+    'extinct':              ['EX · 절멸',     '#9e9e9e'],
+    'data deficient':       ['DD · 정보부족', '#9e9e9e'],
+  };
 
-  // iNaturalist fallback
-  try {
-    const iRes = await fetch(`https://api.inaturalist.org/v1/taxa?q=${encodeURIComponent(n.name)}&per_page=1&rank=species`);
-    const iData = await iRes.json();
-    const photo = iData.results?.[0]?.default_photo?.medium_url;
-    if (photo) { setImg(photo, 'iNaturalist'); return; }
-  } catch(e) {}
+  const [wData, iData] = await Promise.all([
+    fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(wikiTitle)}`).then(r => r.json()).catch(() => null),
+    fetch(`https://api.inaturalist.org/v1/taxa?q=${encodeURIComponent(n.name)}&per_page=1&rank=species`).then(r => r.json()).catch(() => null),
+  ]);
 
-  // SVG 실루엣 최종 fallback
+  // Description
+  const descEl = document.getElementById('wiki-desc');
+  if (descEl) {
+    let koText = SPECIES_DESC_KO[id];
+    if (wData?.extract) {
+      const sentences = wData.extract.split('. ').slice(0, 2).join('. ') + '.';
+      try {
+        const tRes = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(sentences)}&langpair=en|ko&de=jaydenpark9497@gmail.com`);
+        const tData = await tRes.json();
+        if (tData.responseStatus === 200 && tData.responseData?.translatedText) {
+          koText = tData.responseData.translatedText;
+        }
+      } catch(e) {}
+    }
+    descEl.textContent = koText;
+    descEl.classList.remove('opacity-40');
+  }
+
+  // IUCN
+  const iucnEl = document.getElementById('iucn-badge');
+  if (iucnEl) {
+    const statusName = iData?.results?.[0]?.conservation_status?.status_name?.toLowerCase();
+    if (statusName && iucnMap[statusName]) {
+      const [label, color] = iucnMap[statusName];
+      iucnEl.innerHTML = `<span class="text-[10px] font-semibold px-1.5 py-0.5 rounded" style="color:${color};background:${color}22">${label}</span>`;
+    }
+  }
+
+  // Image
+  if (wData?.thumbnail?.source) { setImg(wData.thumbnail.source, 'Wikipedia'); return; }
+  const photo = iData?.results?.[0]?.default_photo?.medium_url;
+  if (photo) { setImg(photo, 'iNaturalist'); return; }
   wrap.innerHTML = getFallbackSVG(id);
 }
 
