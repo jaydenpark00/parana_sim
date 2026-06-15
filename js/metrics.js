@@ -187,7 +187,7 @@ function buildWaveStates(ranking) {
       directRemoved,
       cascadeExtinct,
       allExtinct: new Set(cumExtinct),
-      alive: 40 - cumExtinct.size,
+      alive: graph.nodes.length - cumExtinct.size,
       stepLabel: i === 0 ? 'Step 0 — Top 5 removed' : `Cascade step ${i}`,
       newIds: step.ids
     });
@@ -203,5 +203,4 @@ function buildExtMap(states) {
     const newDirect  = new Set([...state.directRemoved].filter(id => !prevAll.has(id)));
     const newCascade = new Set([...state.cascadeExtinct].filter(id => !prevAll.has(id)));
     return { newDirect, newCascade };
-  });
-}
+  })

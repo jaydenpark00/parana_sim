@@ -98,7 +98,7 @@ function drawCmpPanel(prefix, states, extMap, ranking) {
   const isFinal = cmpWave >= states.length;
   const safeWave = Math.min(cmpWave, states.length - 1);
   const state = states[safeWave];
-  const survived = 40 - state.allExtinct.size;
+  const survived = graph.nodes.length - state.allExtinct.size;
   document.getElementById(prefix + '-alive').textContent = isFinal ? survived : state.alive;
 
   // ── Extinction log ───────────────────────────────────────────
@@ -148,7 +148,7 @@ function drawCmpPanel(prefix, states, extMap, ranking) {
     const extCount = state.allExtinct.size;
     logHtml += `<div style="padding:5px 6px;border-radius:3px;background:rgba(38,198,218,0.05);border-left:2px solid #26c6da;margin-top:2px;">
       <span style="color:#26c6da;font-size:10px;font-weight:600;">■ 최종 생존 ${survived}종 &nbsp;·&nbsp; </span>
-      <span style="color:#455a64;font-size:10px;font-weight:600;">■ 총 멸종 ${extCount}종 (${Math.round(extCount/40*100)}%)</span>
+      <span style="color:#455a64;font-size:10px;font-weight:600;">■ 총 멸종 ${extCount}종 (${Math.round(extCount/graph.nodes.length*100)}%)</span>
     </div>`;
   } else if (safeWave === 0 || states.slice(1, safeWave + 1).every(s => s.newIds.filter(id => !s.directRemoved.has(id)).length === 0)) {
     // no cascade yet — show placeholder
@@ -196,7 +196,4 @@ function cmpTogglePlay() {
     icon.textContent = 'pause';
     cmpPlayInterval = setInterval(() => {
       if (cmpWave >= getMaxStep()) { clearInterval(cmpPlayInterval); cmpPlayInterval = null; icon.textContent = 'play_arrow'; return; }
-      setWave(cmpWave + 1);
-    }, 900);
-  }
-}
+      setWave(cm
