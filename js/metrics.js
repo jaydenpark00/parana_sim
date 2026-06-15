@@ -175,7 +175,7 @@ function computeBridgeNodes(sccs) {
 function buildWaveStates(ranking) {
   const directIds = ranking.slice(0, 5).map(r => r.id);
   const directRemoved = new Set(directIds);
-  const result = runCascade({ nodes: graph.nodes, edges: graph.edges }, directIds, getThreshold());
+  const result = runCascade({ nodes: graph.nodes, edges: graph.edges }, directIds, 0.7);
 
   const states = [];
   let cumExtinct = new Set();

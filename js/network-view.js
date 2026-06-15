@@ -218,9 +218,3 @@ function getFallbackSVG(id) {
   </div>`;
 }
 
-function getThreshold() { return parseFloat(document.getElementById('threshold-slider').value); }
-
-function onThresholdChange(val) {
-  const pct = parseFloat(val);
-  document.getElementById('threshold-val').textContent = pct === 0 ? 'Strict' : Math.round(pct * 100) + '%';
-}

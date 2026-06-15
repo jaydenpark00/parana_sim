@@ -34,19 +34,6 @@
     </a>
   </nav>
 
-  <!-- Threshold control — used by 3-Way Compare -->
-  <div class="px-gutter mt-4">
-    <div class="bg-surface-container rounded-lg p-3 border border-outline-variant/20">
-      <p class="font-label-md text-label-md text-on-surface-variant mb-2">멸종 임계값</p>
-      <div class="flex items-center gap-2">
-        <input type="range" id="threshold-slider" min="0" max="0.9" step="0.05" value="0.7"
-          class="flex-1 accent-primary h-1"
-          oninput="onThresholdChange(this.value)"/>
-        <span id="threshold-val" class="font-data-mono text-data-mono text-primary w-10 text-right">70%</span>
-      </div>
-      <p class="text-[10px] text-on-surface-variant mt-1 opacity-60">먹이 손실에 따른 멸종 기준값 (3자 비교 적용)</p>
-    </div>
-  </div>
 </aside>
 
 <!-- Main -->

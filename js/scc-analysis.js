@@ -137,19 +137,19 @@ function renderSccMeaning(tarjanSccs, kosarajuSccs, bridgeDetails) {
   el.innerHTML = `
     <div class="flex items-start gap-2">
       <span class="w-2 h-2 rounded-full bg-primary mt-1.5 flex-none"></span>
-      <p><strong class="text-on-surface">SCC</strong>는 서로 유향 경로로 오갈 수 있는 종 묶음입니다. 같은 버블 안의 노드는 순환 먹이 연결 안에 있습니다.</p>
+      <p><strong class="text-on-surface">강한 연결 요소 (SCC)</strong>는 그룹 내 임의의 두 종 사이에 양방향 유향 경로가 존재하는 최대 부분그래프입니다. 먹이그물에서 SCC는 <em>순환 포식 관계</em>를 형성하는 종 집합을 의미합니다.</p>
     </div>
     <div class="flex items-start gap-2">
       <span class="w-2 h-2 rounded-full bg-[#ff7043] mt-1.5 flex-none"></span>
-      <p><strong class="text-on-surface">브리지 노드</strong>는 자기 SCC 밖으로 연결을 만들거나 받는 종입니다. 제거되면 SCC 사이 흐름을 끊을 가능성이 큽니다.</p>
+      <p><strong class="text-on-surface">브리지 노드</strong>는 서로 다른 SCC 사이의 에너지 흐름을 중계하는 종입니다. SCC 간 교차 엣지 수(점수)가 높을수록 생태적 영향력이 크며, 제거 시 먹이그물 연결성이 단절될 위험이 있습니다.</p>
     </div>
     <div class="flex items-start gap-2">
       <span class="w-2 h-2 rounded-full bg-[#26c6da] mt-1.5 flex-none"></span>
-      <p>Tarjan/Kosaraju는 <strong class="text-on-surface">${sameResult ? '같은 SCC 묶음' : '서로 다른 묶음'}</strong>을 냅니다. 화면의 차이는 주로 발견 순서입니다.</p>
+      <p>Tarjan과 Kosaraju는 동일한 SCC를 탐지하는 서로 다른 알고리즘입니다. 두 결과는 <strong class="text-on-surface">${sameResult ? '일치합니다' : '불일치합니다'}</strong>. ${sameResult ? '탐색 순서만 다를 뿐 SCC 구성은 동일합니다.' : 'SCC 구성에 차이가 있습니다 — 그래프 구조를 확인하세요.'}</p>
     </div>
     <div class="mt-2 px-2 py-1.5 rounded bg-surface-container-highest/70 border border-outline-variant/20">
-      <span class="text-[10px] text-on-surface-variant">최상위 브리지</span>
-      <p class="text-[12px] text-primary font-bold">${strongestName} <span class="text-[10px] text-on-surface-variant font-normal">· ${strongestScore}</span></p>
+      <span class="text-[10px] text-on-surface-variant">최상위 브리지 노드</span>
+      <p class="text-[12px] text-primary font-bold">${strongestName} <span class="text-[10px] text-on-surface-variant font-normal">· SCC 간 교차 엣지 ${strongestScore}</span></p>
     </div>`;
 }
 
