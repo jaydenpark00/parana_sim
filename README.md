@@ -9,149 +9,120 @@
 ## 데이터셋
 
 - **종 수:** 40종 (어류 26종 + 무척추동물·플랑크톤·식물·비생물 에너지원 14개 그룹)
-- **엣지 수:** 164개 유향 가중치 엣지
+- **엣지 수:** 181개 유향 가중치 엣지 (self-loop 4개 별도 관리)
 - **엣지 형식:** `[prey_id, predator_id, weight]` — weight는 포식자의 총 먹이 의존도에서 해당 먹이가 차지하는 비율 (0~1)
 - **출처:** Parana River freshwater food web (FW_001)
+
+### 그래프 구성
+
+| 그래프 | 설명 | 용도 |
+|--------|------|------|
+| G_wtecm | 181간선 + self-loop 4개 (`SELF_LOOP_WEIGHTS`) | WTECM 멸종 cascade |
+| G_alg | 181간선 (self-loop 제거) | 알고리즘 랭킹 (BC, CI, SCC, CoreHD) |
+
+self-loop 4종: Hoplias malabaricus (0.2), Other piscivores (0.1), Rhaphiodon vulpinus (0.1), Serrasalmus marginatus (0.1)
 
 ---
 
 ## 알고리즘
 
-### 1. 강한 연결 요소 (SCC) 탐지
-
-그룹 내 임의의 두 종 사이에 양방향 유향 경로가 존재하는 최대 부분그래프를 탐지한다. 먹이그물에서 SCC는 순환 포식 관계를 형성하는 종 집합을 의미한다.
-
-#### Tarjan's Algorithm
-
-DFS 스택 기반의 단일 패스 알고리즘. 각 노드에 발견 인덱스(`idx`)와 도달 가능한 최소 인덱스(`low`)를 부여하고, `low[v] == idx[v]`가 되는 시점에 스택에서 SCC를 추출한다.
-
-- **시간 복잡도:** O(V + E)
-- **특징:** 싱크(sink) SCC를 먼저 발견하므로 위상 정렬의 역순으로 출력됨
-
-```
-for each node v:
-    idx[v] = low[v] = cnt++
-    push v to stack
-    for each neighbor w of v:
-        if w not visited: recurse(w); low[v] = min(low[v], low[w])
-        elif w on stack:  low[v] = min(low[v], idx[w])
-    if low[v] == idx[v]:
-        pop stack until v → this is one SCC
-```
-
-#### Kosaraju's Algorithm
+### 1. 강한 연결 요소 (SCC) 탐지 — Kosaraju
 
 원본 그래프와 전치(역방향) 그래프를 각각 DFS하는 2패스 알고리즘.
 
 1. **1패스:** 원본 그래프 DFS → 종료 순서(`finishOrder`) 기록
 2. **2패스:** 전치 그래프를 역 종료 순서로 DFS → 각 DFS 트리 = SCC
 
-- **시간 복잡도:** O(V + E)
-- **특징:** Tarjan과 동일한 SCC를 탐지하나 발견 순서가 다름. 두 결과를 비교해 알고리즘 정확성을 교차 검증
-
-두 알고리즘의 결과를 SCC 구성원 집합의 서명(signature)으로 비교해 일치 여부를 실시간으로 표시한다.
+**시간 복잡도:** O(V + E)
 
 ---
 
-### 2. 브리지 노드 (Bridge Node)
+### 2. SCC Fragmentation Score
 
-서로 다른 SCC 사이의 교차 엣지(cross-SCC edge)에 관여하는 종. 점수는 해당 종이 관여하는 교차 엣지의 수로 정의된다.
+각 종을 제거했을 때 SCC 구조가 얼마나 파편화되는지 정량화. Python 파이프라인과 동일한 계산식 사용.
 
-```
-score(v) = |{e = (s, t) : scc(s) ≠ scc(t), s = v or t = v}|
-```
+$$\text{Frag Score}(v) = \Delta N_{SCC} + \frac{L_{before} - L_{after}}{L_{before}}$$
 
-점수가 높을수록 SCC 간 에너지 흐름에서 차지하는 비중이 크며, 제거 시 먹이그물 연결성 단절 위험이 높다.
+- ΔN_SCC: 제거 전후 SCC 수 변화 (singleton 보정 적용)
+- L_before / L_after: 제거 전후 최대 SCC 크기
 
-![브릿지 노드 top-10](images/bridge_top10.png)
+점수가 높을수록 제거 시 먹이그물 순환 구조가 크게 붕괴된다.
 
 ---
 
 ### 3. 매개 중심성 (Betweenness Centrality, BC)
 
-Brandes 알고리즘으로 계산한 비방향 매개 중심성. 노드 v의 BC는 v를 통과하는 최단 경로의 비율이다.
+Brandes 알고리즘으로 계산한 무방향 매개 중심성.
 
-$$BC(v) = \sum_{s \neq v \neq t} \frac{\sigma_{st}(v)}{\sigma_{st}}$$
+$$BC(v) = \sum_{s \neq v \neq t} \frac{\sigma_{st}(v)}{\sigma_{st}} \cdot \frac{1}{(N-1)(N-2)}$$
 
-- σ_st: s→t 최단 경로 수
-- σ_st(v): 그 중 v를 거치는 경로 수
-- 정규화: `/ (N-1)(N-2)`
-
-**시간 복잡도:** O(V · (V + E))
-
-BFS로 최단 경로를 순방향 계산 후, 스택을 역순으로 pop하며 의존도(δ)를 역전파한다.
+**시간 복잡도:** O(V · (V + E)) — BFS 순방향 후 스택 역전파
 
 ---
 
 ### 4. 집단 영향력 (Collective Influence, CI)
 
-Morone & Makse (2015) 제안 지표. 단순 연결도(degree)가 아닌 2홉(hop) 이웃의 연결도를 고려해 네트워크 분리에 가장 효과적인 노드를 식별한다.
+Morone & Makse (2015). G_alg 무방향 그래프 기준.
 
+**CI l=2:**
 $$CI_2(v) = (k_v - 1) \sum_{j \in \partial Ball(v,2)} (k_j - 1)$$
 
-- k_v: 노드 v의 차수
-- ∂Ball(v, 2): v로부터 정확히 2홉 거리의 노드 집합
+**CI l=1:**
+$$CI_1(v) = (k_v - 1) \sum_{j \in \partial Ball(v,1)} (k_j - 1)$$
 
-**구현:** 1홉 이웃 집합을 먼저 구한 뒤, 각 1홉 이웃의 이웃 중 v 및 v의 1홉에 속하지 않는 노드를 2홉 경계로 수집한다.
+∂Ball(v, l): v로부터 정확히 l홉 거리의 노드 집합
 
 ---
 
-### 5. 연쇄 멸종 시뮬레이션 (Cascade Extinction)
+### 5. CoreHD
 
-먹이 의존도 기반의 반복적 멸종 모델.
+반복적 2-core 해체 기반 랭킹.
 
-**멸종 조건:** 포식자 v의 잔존 먹이 가중치 합이 초기값의 70% 미만으로 감소하면 멸종
+```
+while 남은 노드가 있을 때:
+    현재 그래프에서 2-core 계산
+    2-core 내 degree 최대 노드 제거 (tie → id 오름차순)
+    2-core가 없으면 나머지를 degree 순 정리
+```
 
-$$\frac{\sum_{u \notin Extinct} w_{uv}}{\sum_{all} w_{uv}} < 0.7$$
+제거된 순서가 핵심종 랭킹 (먼저 제거될수록 score 높음).
 
-**알고리즘:**
+---
+
+### 6. 연쇄 멸종 시뮬레이션 (WTECM)
+
+먹이 의존도 기반 반복 멸종 모델. θ = 0.7.
+
+**멸종 조건:** 먹이 손실 비율이 θ 이상이면 멸종
+
+$$\frac{rem_v}{initial_v} < 1 - \theta \quad (\text{즉, 먹이의 70\% 이상 손실})$$
+
+self-loop 보유 종은 자신이 살아있는 동안 self-loop weight를 rem에 항상 포함.
+
 ```
 extinct ← initial_removal
 repeat:
     for each non-extinct, non-basal node v:
-        remaining = sum of weights from non-extinct prey of v
-        if remaining / v.initialPreyWeight < 0.7:
-            mark v as newly extinct
-    extinct ← extinct ∪ newly_extinct
+        rem = Σ w(u→v) for u ∉ extinct
+        rem += SELF_LOOP_WEIGHTS[v]  # if exists
+        if rem / v.initialPreyWeight < (1 - θ):
+            mark v extinct
 until no new extinctions
 ```
 
-각 반복을 "wave"로 기록해 단계별 연쇄 멸종 과정을 시각화한다.
-
 ---
 
-### 6. 3-Way Comparison
+### 7. 5-Way 비교 분석
 
-BC, CI, SCC Bridge 세 지표로 각각 상위 5종을 제거한 뒤 연쇄 멸종 시뮬레이션을 실행해 결과를 비교한다.
+5개 지표로 각각 상위 5종을 제거한 뒤 WTECM cascade를 실행해 결과를 비교한다.
 
-| 지표 | 기반 | 특징 |
-|------|------|------|
-| BC (매개 중심성) | 최단 경로 | 정보·에너지 흐름의 병목 탐지 |
-| CI (집단 영향력) | 2홉 이웃 차수 | 네트워크 분리 최적화 |
-| SCC Bridge | SCC 간 교차 엣지 | 순환 구조 간 흐름 단절 |
-
-**핵심종 랭킹 비교 히트맵 (낮은 숫자 = 더 중요)**
-
-![핵심종 랭킹 비교](images/ranking_heatmap.png)
-
-**연쇄 멸종 카스케이드 히트맵**
-
-![Co-extinction Cascade Heatmap](images/cascade_heatmap.png)
-
----
-
-### 7. Force-Directed Graph Layout
-
-D3.js `forceSimulation`으로 네트워크를 시각화한다.
-
-| Force | 파라미터 | 역할 |
-|-------|----------|------|
-| `forceLink` | distance=100, strength=0.4 | 엣지 길이 유지 |
-| `forceManyBody` | strength=−600 | 노드 간 반발력 |
-| `forceCollide` | radius=22 | 노드 겹침 방지 |
-| `forceCenter` | cx, cy | 전체 중심 유지 |
-
-엣지 두께는 가중치에 비례(`stroke-width = weight × 2`), 노드 크기는 out-degree에 비례한다.
+| 지표 | 기반 그래프 | 특징 |
+|------|-------------|------|
+| BC | G_alg 무방향 | 최단 경로 병목 탐지 |
+| CI l=2 | G_alg 무방향 | 2홉 이웃 기반 네트워크 분리 |
+| CI l=1 | G_alg 무방향 | 1홉 이웃 기반 (빠른 근사) |
+| SCC Frag Score | G_alg 유방향 | SCC 구조 파편화 최대화 |
+| CoreHD | G_alg 무방향 | 2-core 반복 해체 |
 
 ---
 
@@ -163,15 +134,16 @@ sim/
 ├── css/
 │   └── style.css
 ├── js/
-│   ├── data.js          # 종 목록, 엣지 행렬, Wikipedia 제목, 한국어 설명
-│   ├── graph-core.js    # buildGraph(), runCascade()
-│   ├── metrics.js       # computeBC(), computeCI(), computeSCC(), computeSCCKosaraju()
-│   ├── network-view.js  # D3 그래프 렌더링, 종 정보 패널
-│   ├── scc-analysis.js  # SCC 분석 탭 렌더링
-│   ├── comparison.js    # 3-Way Comparison 탭
-│   ├── view-router.js   # 탭 전환
+│   ├── data.js           # 종 목록, RAW_EDGES, SELF_LOOP_WEIGHTS, Wikipedia 제목, 한국어 설명
+│   ├── graph-core.js     # buildGraph(), runCascade()
+│   ├── metrics.js        # computeBC(), computeCI(), computeCI1(), computeSCCFragScore(),
+│   │                     # computeCoreHD(), computeSCC(), computeSCCKosaraju()
+│   ├── network-view.js   # D3 force-directed 그래프, 종 정보 패널 (Wikipedia/iNaturalist)
+│   ├── scc-analysis.js   # SCC 분석 탭 — 응집 그래프, 브리지 랭킹, SCC별 핵심종
+│   ├── comparison.js     # 5-Way 비교 분석 탭
+│   ├── view-router.js    # 탭 전환
 │   └── tailwind-config.js
-└── images/              # 분석 결과 이미지
+└── images/
 ```
 
 ---

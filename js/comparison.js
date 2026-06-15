@@ -1,21 +1,27 @@
 // ── Comparison state ───────────────────────────────────────────────────────
 let cmpWave = 0, cmpPlayInterval = null, cmpInitialized = false, cmpNodePos = null;
-let bcRanking, ciRanking, sccRanking;
-let bcStates,   ciStates,   sccStates;
-let bcExtMap,   ciExtMap,   sccExtMap;
+let bcRanking, ci2Ranking, ci1Ranking, sccRanking, corehdRanking;
+let bcStates,   ci2States,  ci1States,  sccStates,  corehdStates;
+let bcExtMap,   ci2ExtMap,  ci1ExtMap,  sccExtMap,  corehdExtMap;
 
 function initComparison() {
   if (cmpInitialized) return;
   cmpInitialized = true;
-  bcRanking  = computeBC();
-  ciRanking  = computeCI();
-  sccRanking = computeBridgeNodes(computeSCC());
-  bcStates   = buildWaveStates(bcRanking);
-  ciStates   = buildWaveStates(ciRanking);
-  sccStates  = buildWaveStates(sccRanking);
-  bcExtMap   = buildExtMap(bcStates);
-  ciExtMap   = buildExtMap(ciStates);
-  sccExtMap  = buildExtMap(sccStates);
+  bcRanking     = computeBC();
+  ci2Ranking    = computeCI();
+  ci1Ranking    = computeCI1();
+  sccRanking    = computeSCCFragScore();
+  corehdRanking = computeCoreHD();
+  bcStates      = buildWaveStates(bcRanking);
+  ci2States     = buildWaveStates(ci2Ranking);
+  ci1States     = buildWaveStates(ci1Ranking);
+  sccStates     = buildWaveStates(sccRanking);
+  corehdStates  = buildWaveStates(corehdRanking);
+  bcExtMap      = buildExtMap(bcStates);
+  ci2ExtMap     = buildExtMap(ci2States);
+  ci1ExtMap     = buildExtMap(ci1States);
+  sccExtMap     = buildExtMap(sccStates);
+  corehdExtMap  = buildExtMap(corehdStates);
   computeCmpPositions();
   // Set slider max — includes final summary wave
   const maxStep = getMaxStep();
@@ -172,15 +178,16 @@ function renderAllPanels() {
   const maxStep = getMaxStep();
   document.getElementById('wave-label').textContent = `${cmpWave} / ${maxStep}`;
   document.getElementById('wave-slider').value = cmpWave;
-  drawCmpPanel('bc',  bcStates,  bcExtMap,  bcRanking);
-  drawCmpPanel('ci',  ciStates,  ciExtMap,  ciRanking);
-  drawCmpPanel('scc', sccStates, sccExtMap, sccRanking);
+  drawCmpPanel('bc',     bcStates,     bcExtMap,     bcRanking);
+  drawCmpPanel('ci2',    ci2States,    ci2ExtMap,    ci2Ranking);
+  drawCmpPanel('ci1',    ci1States,    ci1ExtMap,    ci1Ranking);
+  drawCmpPanel('scc',    sccStates,    sccExtMap,    sccRanking);
+  drawCmpPanel('corehd', corehdStates, corehdExtMap, corehdRanking);
 }
 
 function getMaxStep() {
   if (!cmpInitialized) return 0;
-  // +1 for the final summary wave (survived/extinct only)
-  return Math.max(bcStates.length, ciStates.length, sccStates.length);
+  return Math.max(bcStates.length, ci2States.length, ci1States.length, sccStates.length, corehdStates.length);
 }
 function setWave(w) { cmpWave = Math.max(0, Math.min(getMaxStep(), w)); renderAllPanels(); }
 function cmpReset()    { setWave(0); }
@@ -196,4 +203,7 @@ function cmpTogglePlay() {
     icon.textContent = 'pause';
     cmpPlayInterval = setInterval(() => {
       if (cmpWave >= getMaxStep()) { clearInterval(cmpPlayInterval); cmpPlayInterval = null; icon.textContent = 'play_arrow'; return; }
-      setWave(cm
+      setWave(cmpWave + 1);
+    }, 900);
+  }
+}

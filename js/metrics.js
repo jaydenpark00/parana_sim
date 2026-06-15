@@ -171,6 +171,161 @@ function computeBridgeNodes(sccs) {
     .sort((a,b) => b.score - a.score);
 }
 
+// ── CI(l=1) ───────────────────────────────────────────────────────────────
+// Frontier after 1 BFS hop = direct neighbors = ∂Ball(v,1)
+function computeCI1() {
+  const { adj, deg } = buildUndirAdj();
+  return graph.nodes.map(n => {
+    const ki = deg[n.id];
+    const frontier = adj[n.id]; // Set of 1-hop neighbors
+    const ci = (ki - 1) * [...frontier].reduce((s, j) => s + (deg[j] - 1), 0);
+    return { id: n.id, score: ci };
+  }).sort((a, b) => b.score - a.score);
+}
+
+// ── SCC Fragmentation Score ────────────────────────────────────────────────
+// Python: scc_frag_score = fragmentation_gain + largest_scc_loss_ratio
+// Uses Kosaraju on G_alg (self-loops already excluded from graph.edges)
+function computeSCCFragScore() {
+  const nodeIds = graph.nodes.map(n => n.id);
+
+  function kosarajuExclude(excludeId) {
+    const idSet = new Set(nodeIds.filter(id => id !== excludeId));
+    const adj = {}, revAdj = {};
+    idSet.forEach(id => { adj[id] = []; revAdj[id] = []; });
+    graph.edges.forEach(e => {
+      const s = typeof e.source === 'object' ? e.source.id : e.source;
+      const t = typeof e.target === 'object' ? e.target.id : e.target;
+      if (!idSet.has(s) || !idSet.has(t) || s === t) return;
+      adj[s].push(t);
+      revAdj[t].push(s);
+    });
+    const ids = [...idSet];
+    const vis1 = new Set(), finishOrder = [];
+    ids.forEach(start => {
+      if (vis1.has(start)) return;
+      const stk = [[start, 0]]; vis1.add(start);
+      while (stk.length) {
+        const fr = stk[stk.length - 1], [v] = fr, nbrs = adj[v];
+        let pushed = false;
+        while (fr[1] < nbrs.length) {
+          const w = nbrs[fr[1]++];
+          if (!vis1.has(w)) { vis1.add(w); stk.push([w, 0]); pushed = true; break; }
+        }
+        if (!pushed) { stk.pop(); finishOrder.push(v); }
+      }
+    });
+    const vis2 = new Set(), sccs = [];
+    for (let i = finishOrder.length - 1; i >= 0; i--) {
+      const start = finishOrder[i];
+      if (vis2.has(start)) continue;
+      const scc = [], stk = [start];
+      while (stk.length) {
+        const v = stk.pop();
+        if (vis2.has(v)) continue;
+        vis2.add(v); scc.push(v);
+        for (const w of revAdj[v]) if (!vis2.has(w)) stk.push(w);
+      }
+      sccs.push(scc);
+    }
+    return sccs;
+  }
+
+  const before = computeSCCKosaraju();
+  const nb = before.length;
+  const lb = Math.max(...before.map(s => s.length));
+  const nodeToScc = {};
+  before.forEach(scc => scc.forEach(id => nodeToScc[id] = scc));
+
+  return graph.nodes.map(n => {
+    const compV = nodeToScc[n.id] || [n.id];
+    const expected_after = compV.length === 1 ? nb - 1 : nb;
+    const after = kosarajuExclude(n.id);
+    const na = after.length;
+    const la = after.length > 0 ? Math.max(...after.map(s => s.length)) : 0;
+    const fragmentation_gain = na - expected_after;
+    const largest_scc_loss_ratio = lb > 0 ? (lb - la) / lb : 0;
+    return { id: n.id, score: fragmentation_gain + largest_scc_loss_ratio };
+  }).sort((a, b) => b.score - a.score || a.id - b.id);
+}
+
+// ── CoreHD ────────────────────────────────────────────────────────────────
+// 반복적 2-core 해체. tie → node id 오름차순. Returns [{id, score}] most-critical first.
+function computeCoreHD() {
+  // Build undirected adjacency as mutable Map<id, Set<id>>
+  const adjMap = new Map();
+  graph.nodes.forEach(n => adjMap.set(n.id, new Set()));
+  graph.edges.forEach(e => {
+    const s = typeof e.source === 'object' ? e.source.id : e.source;
+    const t = typeof e.target === 'object' ? e.target.id : e.target;
+    if (s === t) return;
+    adjMap.get(s).add(t);
+    adjMap.get(t).add(s);
+  });
+
+  // Compute coreness (k-core number) via iterative peeling
+  function coreNumbers(nodeSet, adj) {
+    const deg = new Map();
+    nodeSet.forEach(v => deg.set(v, [...adj.get(v)].filter(u => nodeSet.has(u)).length));
+    const coreness = new Map();
+    const remaining = new Set(nodeSet);
+    let k = 1;
+    while (remaining.size > 0) {
+      let changed = true;
+      while (changed) {
+        changed = false;
+        remaining.forEach(v => {
+          if (deg.get(v) < k) {
+            coreness.set(v, k - 1);
+            remaining.delete(v);
+            adj.get(v).forEach(u => { if (remaining.has(u)) deg.set(u, deg.get(u) - 1); });
+            changed = true;
+          }
+        });
+      }
+      if (remaining.size > 0) k++;
+    }
+    return coreness;
+  }
+
+  const remaining = new Set(graph.nodes.map(n => n.id));
+  // Deep-copy adjacency to allow mutation
+  const adj = new Map();
+  adjMap.forEach((neighbors, id) => adj.set(id, new Set(neighbors)));
+
+  const removalOrder = [];
+
+  while (remaining.size > 0) {
+    const coreness = coreNumbers(remaining, adj);
+    const in2core = [...remaining].filter(v => (coreness.get(v) || 0) >= 2);
+
+    if (in2core.length === 0) {
+      // No 2-core: remove remaining sorted by (-degree in remaining, id)
+      const rest = [...remaining].sort((a, b) => {
+        const da = [...adj.get(a)].filter(u => remaining.has(u)).length;
+        const db = [...adj.get(b)].filter(u => remaining.has(u)).length;
+        return db - da || a - b;
+      });
+      rest.forEach(v => removalOrder.push(v));
+      break;
+    }
+
+    // Pick victim: highest degree in 2-core subgraph, tie → smallest id
+    const victim = in2core.sort((a, b) => {
+      const da = [...adj.get(a)].filter(u => in2core.includes(u)).length;
+      const db = [...adj.get(b)].filter(u => in2core.includes(u)).length;
+      return db - da || a - b;
+    })[0];
+
+    removalOrder.push(victim);
+    remaining.delete(victim);
+    // No need to remove from adj — coreNumbers filters by remaining
+  }
+
+  const n = removalOrder.length;
+  return removalOrder.map((id, i) => ({ id, score: n - i }));
+}
+
 // Build wave states: remove top-5 all at once, then replay cascade step by step
 function buildWaveStates(ranking) {
   const directIds = ranking.slice(0, 5).map(r => r.id);
@@ -203,4 +358,5 @@ function buildExtMap(states) {
     const newDirect  = new Set([...state.directRemoved].filter(id => !prevAll.has(id)));
     const newCascade = new Set([...state.cascadeExtinct].filter(id => !prevAll.has(id)));
     return { newDirect, newCascade };
-  })
+  });
+}

@@ -32,4 +32,19 @@ function runCascade(graph, initialIds, threshold) {
           return tgt === n.id && !extinct.has(src);
         })
         .reduce((s, e) => s + e.weight, 0);
-      // Self-loop: node eats itself —
+      // Self-loop: node eats itself — always available while alive
+      if (typeof SELF_LOOP_WEIGHTS !== 'undefined' && SELF_LOOP_WEIGHTS[n.id]) {
+        rem += SELF_LOOP_WEIGHTS[n.id];
+      }
+      // Python semantics: extinct when loss_ratio >= theta
+      // loss_ratio = (initial - rem) / initial >= theta  ↔  rem/initial < (1-theta)
+      if (rem / n.initialPreyWeight < (1 - threshold)) next.add(n.id);
+    });
+    newlyExtinct = new Set([...next].filter(id => !extinct.has(id)));
+    if (newlyExtinct.size > 0) {
+      steps.push({ step: steps.length, ids: [...newlyExtinct] });
+      for (const id of newlyExtinct) extinct.add(id);
+    }
+  }
+  return { steps, extinct: [...extinct] };
+}

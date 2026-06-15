@@ -14,7 +14,9 @@ function initSccAnalysis() {
 function runSccAnalysis() {
   const tarjanSccs    = computeSCC();
   const kosarajuSccs  = computeSCCKosaraju();
-  const bridgeNodes   = computeBridgeNodes(tarjanSccs);
+  // SCC Fragmentation Score: 제거 시 실제 SCC 파편화 정도 (Python scc_frag_score)
+  const allFragScores = computeSCCFragScore();
+  const bridgeNodes   = allFragScores.filter(n => n.score > 0);
 
   // SCC 색상 맵 — 비자명(크기>1) SCC에 팔레트 색 할당
   const sccColorMap = {};
@@ -37,12 +39,9 @@ function runSccAnalysis() {
   document.getElementById('scc-maxsize').textContent    = maxSize;
   document.getElementById('scc-bridge').textContent     = bridgeDetails.length;
 
-  renderSccMeaning(tarjanSccs, kosarajuSccs, bridgeDetails);
+  renderSccMeaning(tarjanSccs, bridgeDetails);
   renderBridgeRanking(bridgeDetails, sccMeta);
-
-  // 두 알고리즘 SCC 목록 렌더링
-  renderSccList('tarjan-scc-list',   tarjanSccs,   bridgeSet, sccMeta, 'tarjan');
-  renderSccList('kosaraju-scc-list', kosarajuSccs, bridgeSet, sccMeta, 'kosaraju');
+  renderSccKeySpecies(allFragScores, sccMeta);
 
   // 네트워크 그래프
   drawSccAnalysisNetwork(tarjanSccs, bridgeSet, sccMeta, bridgeDetails);
@@ -126,30 +125,26 @@ function buildBridgeDetails(sccs, bridgeNodes, sccMeta) {
     .sort((a, b) => b.score - a.score || SPECIES_NAMES[a.id].localeCompare(SPECIES_NAMES[b.id]));
 }
 
-function renderSccMeaning(tarjanSccs, kosarajuSccs, bridgeDetails) {
-  const sameResult = sccSignature(tarjanSccs) === sccSignature(kosarajuSccs);
+function renderSccMeaning(tarjanSccs, bridgeDetails) {
   const strongest = bridgeDetails[0];
   const strongestName = strongest ? shortName(SPECIES_NAMES[strongest.id]) : '없음';
-  const strongestScore = strongest ? `${strongest.score}개 연결` : 'SCC 간 연결 없음';
+  const strongestScore = strongest ? strongest.score.toFixed(3) : '없음';
+  const nonTrivialCount = tarjanSccs.filter(s => s.length > 1).length;
   const el = document.getElementById('scc-meaning-panel');
   if (!el) return;
 
   el.innerHTML = `
     <div class="flex items-start gap-2">
       <span class="w-2 h-2 rounded-full bg-primary mt-1.5 flex-none"></span>
-      <p><strong class="text-on-surface">강한 연결 요소 (SCC)</strong>는 그룹 내 임의의 두 종 사이에 양방향 유향 경로가 존재하는 최대 부분그래프입니다. 먹이그물에서 SCC는 <em>순환 포식 관계</em>를 형성하는 종 집합을 의미합니다.</p>
+      <p><strong class="text-on-surface">강한 연결 요소 (SCC)</strong>는 그룹 내 임의의 두 종 사이에 양방향 유향 경로가 존재하는 최대 부분그래프입니다. 먹이그물에서 SCC는 <em>순환 포식 관계</em>를 형성하는 종 집합입니다. 비자명 SCC는 <strong class="text-on-surface">${nonTrivialCount}개</strong>입니다.</p>
     </div>
     <div class="flex items-start gap-2">
       <span class="w-2 h-2 rounded-full bg-[#ff7043] mt-1.5 flex-none"></span>
-      <p><strong class="text-on-surface">브리지 노드</strong>는 서로 다른 SCC 사이의 에너지 흐름을 중계하는 종입니다. SCC 간 교차 엣지 수(점수)가 높을수록 생태적 영향력이 크며, 제거 시 먹이그물 연결성이 단절될 위험이 있습니다.</p>
-    </div>
-    <div class="flex items-start gap-2">
-      <span class="w-2 h-2 rounded-full bg-[#26c6da] mt-1.5 flex-none"></span>
-      <p>Tarjan과 Kosaraju는 동일한 SCC를 탐지하는 서로 다른 알고리즘입니다. 두 결과는 <strong class="text-on-surface">${sameResult ? '일치합니다' : '불일치합니다'}</strong>. ${sameResult ? '탐색 순서만 다를 뿐 SCC 구성은 동일합니다.' : 'SCC 구성에 차이가 있습니다 — 그래프 구조를 확인하세요.'}</p>
+      <p><strong class="text-on-surface">SCC Frag Score</strong> = (제거 후 SCC 수 증가) + (최대 SCC 크기 감소 비율). 점수가 높을수록 해당 종 제거 시 네트워크가 더 많이 파편화됩니다. 오른쪽 핵심종 목록에서 SCC별로 확인하세요.</p>
     </div>
     <div class="mt-2 px-2 py-1.5 rounded bg-surface-container-highest/70 border border-outline-variant/20">
       <span class="text-[10px] text-on-surface-variant">최상위 브리지 노드</span>
-      <p class="text-[12px] text-primary font-bold">${strongestName} <span class="text-[10px] text-on-surface-variant font-normal">· SCC 간 교차 엣지 ${strongestScore}</span></p>
+      <p class="text-[12px] text-primary font-bold">${strongestName} <span class="text-[10px] text-on-surface-variant font-normal">· Frag Score ${strongestScore}</span></p>
     </div>`;
 }
 
@@ -178,7 +173,7 @@ function renderBridgeRanking(bridgeDetails, sccMeta) {
           <span class="text-[10px] font-bold text-primary w-5">#${i + 1}</span>
           <span class="w-2.5 h-2.5 rounded-full flex-none" style="background:${group.color}"></span>
           <span class="text-[11px] text-on-surface font-bold truncate">${shortName(SPECIES_NAMES[b.id])}</span>
-          <span class="ml-auto text-[10px] text-[#ff7043] font-bold">${b.score}</span>
+          <span class="ml-auto text-[10px] text-[#ff7043] font-bold">${b.score.toFixed(3)}</span>
         </div>
         <div class="mt-1 h-1 rounded bg-surface-container-highest overflow-hidden">
           <div class="h-full rounded bg-[#ff7043]" style="width:${barWidth}%"></div>
@@ -191,6 +186,83 @@ function renderBridgeRanking(bridgeDetails, sccMeta) {
         </div>
       </button>`;
   }).join('');
+}
+
+function renderSccKeySpecies(fragScores, sccMeta) {
+  const el = document.getElementById('scc-keyspecies-list');
+  if (!el) return;
+
+  const scoreMap = {};
+  fragScores.forEach(f => scoreMap[f.id] = f.score);
+
+  const nonTrivial = sccMeta.groups
+    .filter(g => g.isNonTrivial)
+    .sort((a, b) => b.nodes.length - a.nodes.length);
+  const trivial = sccMeta.groups.filter(g => !g.isNonTrivial);
+
+  let html = '';
+
+  if (nonTrivial.length === 0) {
+    html += `<div class="px-4 py-3 text-[11px] text-on-surface-variant italic">비자명 SCC 없음 — 모든 종이 유향 사이클 밖에 있습니다.</div>`;
+  } else {
+    nonTrivial.forEach(group => {
+      const sorted = [...group.nodes]
+        .map(id => ({ id, score: scoreMap[id] ?? 0 }))
+        .sort((a, b) => b.score - a.score);
+      const maxScore = sorted[0]?.score || 0.001;
+
+      html += `
+        <div class="px-3 py-2.5 border-b border-outline-variant/10">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="w-2.5 h-2.5 rounded-full flex-none" style="background:${group.color}"></span>
+            <span class="font-bold text-on-surface text-[11px]">${group.label}</span>
+            <span class="text-[10px] px-1.5 py-0.5 rounded" style="background:${group.color}22;color:${group.color};border:1px solid ${group.color}44">${group.nodes.length}종</span>
+          </div>
+          <div class="space-y-0.5">
+            ${sorted.map((item, i) => {
+              const barW = Math.max(4, Math.round((item.score / maxScore) * 100));
+              const isBridge = item.score > 0;
+              const barColor = isBridge ? '#ff7043' : '#37474f';
+              return `<button class="w-full text-left flex items-center gap-2 px-1.5 py-1 rounded hover:bg-surface-container-highest/40 transition-colors" onclick="showInfo(${item.id})">
+                <span class="text-[9px] text-on-surface-variant/60 w-4 text-right shrink-0">${i + 1}</span>
+                <span class="text-[10px] text-on-surface truncate" style="width:110px">${shortName(SPECIES_NAMES[item.id])}</span>
+                <div class="flex-1 h-[4px] rounded bg-surface-container-highest overflow-hidden">
+                  <div class="h-full rounded" style="width:${barW}%;background:${barColor}"></div>
+                </div>
+                <span class="text-[9px] font-mono w-[38px] text-right shrink-0" style="color:${isBridge ? '#ff7043' : '#455a64'}">${item.score.toFixed(3)}</span>
+              </button>`;
+            }).join('')}
+          </div>
+        </div>`;
+    });
+  }
+
+  if (trivial.length > 0) {
+    const trivialSorted = trivial
+      .map(g => ({ id: g.nodes[0], score: scoreMap[g.nodes[0]] ?? 0 }))
+      .sort((a, b) => b.score - a.score);
+    html += `
+      <div class="px-3 py-2.5">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-[11px] text-on-surface-variant font-bold">단독 노드 (SCC 크기 1)</span>
+          <span class="text-[10px] px-1.5 py-0.5 rounded bg-surface-container-highest text-on-surface-variant">${trivial.length}종</span>
+        </div>
+        <div class="flex flex-wrap gap-1">
+          ${trivialSorted.map(item => {
+            const isBridge = item.score > 0;
+            return `<span class="text-[9px] px-1.5 py-0.5 rounded cursor-pointer"
+              style="background:${isBridge ? 'rgba(255,112,67,0.10)' : 'rgba(255,255,255,0.04)'};
+                     color:${isBridge ? '#ff7043' : 'rgba(207,230,242,0.45)'};
+                     border:1px solid ${isBridge ? 'rgba(255,112,67,0.25)' : 'rgba(140,147,135,0.10)'}"
+              onclick="showInfo(${item.id})"
+              title="${escapeHtml(SPECIES_NAMES[item.id])} · ${item.score.toFixed(3)}"
+            >${shortName(SPECIES_NAMES[item.id])}${isBridge ? ' ▲' : ''}</span>`;
+          }).join('')}
+        </div>
+      </div>`;
+  }
+
+  el.innerHTML = html;
 }
 
 function renderSccList(containerId, sccs, bridgeSet, sccMeta, algo) {

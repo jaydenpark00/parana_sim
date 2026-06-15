@@ -30,7 +30,7 @@
     </a>
     <a id="nav-compare" class="flex items-center gap-base px-gutter py-base text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#" onclick="showView('compare');return false;">
       <span class="material-symbols-outlined">compare_arrows</span>
-      <span class="font-body-md text-body-md">3자 비교</span>
+      <span class="font-body-md text-body-md">비교 분석</span>
     </a>
   </nav>
 
@@ -187,10 +187,10 @@
       </div>
     </div>
 
-    <!-- CI Panel -->
+    <!-- CI(l=2) Panel -->
     <div class="flex-1 glass-card rounded-xl flex flex-row overflow-hidden min-h-0">
-      <div id="ci-graph-container" class="flex-none relative bg-[#001018] border-r border-outline-variant/10" style="width:45%">
-        <svg id="ci-svg" width="100%" height="100%"></svg>
+      <div id="ci2-graph-container" class="flex-none relative bg-[#001018] border-r border-outline-variant/10" style="width:45%">
+        <svg id="ci2-svg" width="100%" height="100%"></svg>
       </div>
       <div class="flex-1 flex flex-col overflow-hidden min-w-0">
         <div class="flex-none flex items-center justify-between px-4 py-2 border-b border-outline-variant/10 bg-surface-container-low/40">
@@ -199,19 +199,43 @@
             <p class="text-[10px] text-on-surface-variant">Collective Influence (l=2)</p>
           </div>
           <div class="flex items-center gap-3">
-            <div id="ci-ranking-bar" class="flex flex-wrap gap-1"></div>
+            <div id="ci2-ranking-bar" class="flex flex-wrap gap-1"></div>
             <div class="text-right leading-none border-l border-outline-variant/20 pl-3">
-              <span id="ci-alive" class="font-data-mono text-[20px] font-bold text-primary">40</span>
+              <span id="ci2-alive" class="font-data-mono text-[20px] font-bold text-primary">40</span>
               <span class="text-[10px] text-on-surface-variant"> / 40</span>
               <p class="text-[9px] text-on-surface-variant uppercase tracking-wider">생존</p>
             </div>
           </div>
         </div>
-        <div id="ci-ext-log" class="flex-1 overflow-y-auto px-4 py-2 space-y-1.5"></div>
+        <div id="ci2-ext-log" class="flex-1 overflow-y-auto px-4 py-2 space-y-1.5"></div>
       </div>
     </div>
 
-    <!-- SCC Panel -->
+    <!-- CI(l=1) Panel -->
+    <div class="flex-1 glass-card rounded-xl flex flex-row overflow-hidden min-h-0">
+      <div id="ci1-graph-container" class="flex-none relative bg-[#001018] border-r border-outline-variant/10" style="width:45%">
+        <svg id="ci1-svg" width="100%" height="100%"></svg>
+      </div>
+      <div class="flex-1 flex flex-col overflow-hidden min-w-0">
+        <div class="flex-none flex items-center justify-between px-4 py-2 border-b border-outline-variant/10 bg-surface-container-low/40">
+          <div>
+            <h3 class="font-label-md text-label-md font-bold text-on-surface uppercase tracking-wider text-[11px]">CI Targeted</h3>
+            <p class="text-[10px] text-on-surface-variant">Collective Influence (l=1)</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <div id="ci1-ranking-bar" class="flex flex-wrap gap-1"></div>
+            <div class="text-right leading-none border-l border-outline-variant/20 pl-3">
+              <span id="ci1-alive" class="font-data-mono text-[20px] font-bold text-primary">40</span>
+              <span class="text-[10px] text-on-surface-variant"> / 40</span>
+              <p class="text-[9px] text-on-surface-variant uppercase tracking-wider">생존</p>
+            </div>
+          </div>
+        </div>
+        <div id="ci1-ext-log" class="flex-1 overflow-y-auto px-4 py-2 space-y-1.5"></div>
+      </div>
+    </div>
+
+    <!-- SCC Frag Panel -->
     <div class="flex-1 glass-card rounded-xl flex flex-row overflow-hidden min-h-0">
       <div id="scc-graph-container" class="flex-none relative bg-[#001018] border-r border-outline-variant/10" style="width:45%">
         <svg id="scc-svg" width="100%" height="100%"></svg>
@@ -219,8 +243,8 @@
       <div class="flex-1 flex flex-col overflow-hidden min-w-0">
         <div class="flex-none flex items-center justify-between px-4 py-2 border-b border-outline-variant/10 bg-surface-container-low/40">
           <div>
-            <h3 class="font-label-md text-label-md font-bold text-on-surface uppercase tracking-wider text-[11px]">SCC Bridge</h3>
-            <p class="text-[10px] text-on-surface-variant">Strongly Connected Components</p>
+            <h3 class="font-label-md text-label-md font-bold text-on-surface uppercase tracking-wider text-[11px]">SCC Frag</h3>
+            <p class="text-[10px] text-on-surface-variant">SCC Fragmentation Score</p>
           </div>
           <div class="flex items-center gap-3">
             <div id="scc-ranking-bar" class="flex flex-wrap gap-1"></div>
@@ -232,6 +256,30 @@
           </div>
         </div>
         <div id="scc-ext-log" class="flex-1 overflow-y-auto px-4 py-2 space-y-1.5"></div>
+      </div>
+    </div>
+
+    <!-- CoreHD Panel -->
+    <div class="flex-1 glass-card rounded-xl flex flex-row overflow-hidden min-h-0">
+      <div id="corehd-graph-container" class="flex-none relative bg-[#001018] border-r border-outline-variant/10" style="width:45%">
+        <svg id="corehd-svg" width="100%" height="100%"></svg>
+      </div>
+      <div class="flex-1 flex flex-col overflow-hidden min-w-0">
+        <div class="flex-none flex items-center justify-between px-4 py-2 border-b border-outline-variant/10 bg-surface-container-low/40">
+          <div>
+            <h3 class="font-label-md text-label-md font-bold text-on-surface uppercase tracking-wider text-[11px]">CoreHD Targeted</h3>
+            <p class="text-[10px] text-on-surface-variant">2-Core Decomposition</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <div id="corehd-ranking-bar" class="flex flex-wrap gap-1"></div>
+            <div class="text-right leading-none border-l border-outline-variant/20 pl-3">
+              <span id="corehd-alive" class="font-data-mono text-[20px] font-bold text-primary">40</span>
+              <span class="text-[10px] text-on-surface-variant"> / 40</span>
+              <p class="text-[9px] text-on-surface-variant uppercase tracking-wider">생존</p>
+            </div>
+          </div>
+        </div>
+        <div id="corehd-ext-log" class="flex-1 overflow-y-auto px-4 py-2 space-y-1.5"></div>
       </div>
     </div>
   </div>
@@ -255,7 +303,7 @@
   <header class="flex-none flex justify-between items-center h-14 bg-surface border-b border-outline-variant/10 px-gutter z-40 flex-shrink-0">
     <div>
       <h2 class="font-headline-sm text-headline-sm font-bold text-primary">SCC 강연결 요소 분석</h2>
-      <span class="font-label-md text-label-md text-on-surface-variant opacity-60 text-[11px]">Tarjan vs Kosaraju 알고리즘 비교</span>
+      <span class="font-label-md text-label-md text-on-surface-variant opacity-60 text-[11px]">SCC 구조 분석 · 브리지 노드 · 핵심종</span>
     </div>
     <div class="flex items-center gap-4">
       <div class="flex gap-3">
@@ -279,24 +327,25 @@
     </div>
   </header>
 
-  <!-- Main: graph left + two algo panels right -->
+  <!-- Main: graph left + info panels right -->
   <div class="flex-1 flex gap-2 p-3 overflow-hidden min-h-0">
 
-    <!-- SCC Network -->
-    <div class="flex-none glass-card rounded-xl overflow-hidden flex flex-col min-h-0" style="width:42%">
+    <!-- SCC Network (확장) -->
+    <div class="flex-none glass-card rounded-xl overflow-hidden flex flex-col min-h-0" style="width:50%">
       <div class="flex-none px-4 py-2.5 border-b border-outline-variant/10 bg-surface-container-low/40">
-        <h3 class="font-label-md text-label-md font-bold text-on-surface uppercase tracking-wider text-[11px]">SCC 네트워크</h3>
-        <p class="text-[10px] text-on-surface-variant mt-0.5">구역 = SCC 역할 &nbsp;|&nbsp; 버블 = SCC 묶음 &nbsp;|&nbsp; 주황 선 = 주요 연결</p>
+        <h3 class="font-label-md text-label-md font-bold text-on-surface uppercase tracking-wider text-[11px]">SCC 응집 그래프</h3>
+        <p class="text-[10px] text-on-surface-variant mt-0.5">구역 = SCC 역할 &nbsp;|&nbsp; 버블 = SCC 묶음 &nbsp;|&nbsp; 주황 선 = 주요 연결 &nbsp;|&nbsp; <span style="color:#ff7043">B</span> = 브리지 노드</p>
       </div>
       <div id="scc-net-container" class="flex-1 bg-[#001018] relative min-h-0">
         <svg id="scc-net-svg" width="100%" height="100%"></svg>
       </div>
     </div>
 
-    <!-- Algorithm panels -->
+    <!-- Right panels -->
     <div class="flex-1 flex flex-col gap-2 overflow-hidden min-h-0">
 
-      <div class="flex-none grid grid-cols-[1fr_1.18fr] gap-2" style="height:168px">
+      <!-- 해석 + 브리지 랭킹 -->
+      <div class="flex-none grid grid-cols-[1fr_1.18fr] gap-2" style="height:172px">
         <div class="glass-card rounded-xl flex flex-col overflow-hidden min-h-0">
           <div class="flex-none px-4 py-2 border-b border-outline-variant/10 bg-surface-container-low/40">
             <h3 class="font-label-md text-label-md font-bold text-on-surface uppercase tracking-wider text-[11px]">SCC 해석</h3>
@@ -307,40 +356,21 @@
         <div class="glass-card rounded-xl flex flex-col overflow-hidden min-h-0">
           <div class="flex-none px-4 py-2 border-b border-outline-variant/10 bg-surface-container-low/40 flex items-center justify-between">
             <h3 class="font-label-md text-label-md font-bold text-on-surface uppercase tracking-wider text-[11px]">브리지 노드 랭킹</h3>
-            <span class="text-[10px] text-on-surface-variant">SCC 간 연결 수 기준</span>
+            <span class="text-[10px] text-on-surface-variant">SCC Frag Score 기준</span>
           </div>
           <div id="bridge-rank-list" class="flex-1 overflow-y-auto px-3 py-2 space-y-1.5"></div>
         </div>
       </div>
 
-      <!-- Tarjan Panel -->
+      <!-- SCC별 핵심종 -->
       <div class="flex-1 glass-card rounded-xl flex flex-col overflow-hidden min-h-0">
-        <div class="flex-none flex items-center justify-between px-4 py-2 border-b border-outline-variant/10 bg-surface-container-low/40">
-          <div class="flex items-center gap-2">
-            <span class="text-[10px] font-bold px-2 py-1 rounded bg-primary/15 text-primary border border-primary/25 font-label-md">TARJAN</span>
-            <div>
-              <p class="font-label-md text-label-md font-bold text-on-surface text-[11px]">단일 DFS · 스택 + lowlink</p>
-              <p class="text-[10px] text-on-surface-variant">발견 순서: <em>역위상 정렬</em> (싱크 SCC 먼저)</p>
-            </div>
+        <div class="flex-none px-4 py-2 border-b border-outline-variant/10 bg-surface-container-low/40 flex items-center justify-between">
+          <div>
+            <h3 class="font-label-md text-label-md font-bold text-on-surface uppercase tracking-wider text-[11px]">SCC별 핵심종</h3>
+            <p class="text-[10px] text-on-surface-variant mt-0.5">각 SCC 내 종을 SCC Fragmentation Score 기준으로 정렬</p>
           </div>
-          <span class="text-[10px] text-on-surface-variant font-label-md">O(V+E)</span>
         </div>
-        <div id="tarjan-scc-list" class="flex-1 overflow-y-auto text-[11px]"></div>
-      </div>
-
-      <!-- Kosaraju Panel -->
-      <div class="flex-1 glass-card rounded-xl flex flex-col overflow-hidden min-h-0">
-        <div class="flex-none flex items-center justify-between px-4 py-2 border-b border-outline-variant/10 bg-surface-container-low/40">
-          <div class="flex items-center gap-2">
-            <span class="text-[10px] font-bold px-2 py-1 rounded bg-[#26c6da]/15 text-[#26c6da] border border-[#26c6da]/25 font-label-md">KOSARAJU</span>
-            <div>
-              <p class="font-label-md text-label-md font-bold text-on-surface text-[11px]">이중 DFS · 전치 그래프</p>
-              <p class="text-[10px] text-on-surface-variant">발견 순서: <em>위상 정렬</em> (소스 SCC 먼저)</p>
-            </div>
-          </div>
-          <span class="text-[10px] text-on-surface-variant font-label-md">O(V+E)</span>
-        </div>
-        <div id="kosaraju-scc-list" class="flex-1 overflow-y-auto text-[11px]"></div>
+        <div id="scc-keyspecies-list" class="flex-1 overflow-y-auto text-[11px]"></div>
       </div>
 
     </div>

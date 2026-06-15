@@ -96,7 +96,10 @@ function resetGraphView() {
 }
 
 // ── Info Panel ──────────────────────────────────────────────────────────────
+let _showInfoToken = 0; // guard against stale async responses from rapid clicks
+
 async function showInfo(id) {
+  const token = ++_showInfoToken;
   const n = graph.nodes[id];
   const badge = document.getElementById('info-badge');
   badge.textContent = n.isBasal ? '기초 생산자' : '소비자';
@@ -178,6 +181,9 @@ async function showInfo(id) {
     fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(wikiTitle)}`).then(r => r.json()).catch(() => null),
     fetch(`https://api.inaturalist.org/v1/taxa?q=${encodeURIComponent(n.name)}&per_page=1&rank=species`).then(r => r.json()).catch(() => null),
   ]);
+
+  // Abort if user clicked another species while fetching
+  if (token !== _showInfoToken) return;
 
   // Description — SPECIES_DESC_KO 사용
   const descEl = document.getElementById('wiki-desc');
