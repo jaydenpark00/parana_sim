@@ -106,14 +106,26 @@ async function showInfo(id) {
   badge.textContent = n.isBasal ? '기초 생산자' : '소비자';
   badge.className = `text-[10px] px-2 py-0.5 rounded ${n.isBasal ? 'bg-[#4caf50]/20 text-[#4caf50]' : 'bg-[#5b9bd5]/20 text-[#5b9bd5]'}`;
 
-  const preys = graph.edges.filter(e => {
-    const tgt = typeof e.target === 'object' ? e.target.id : e.target;
-    return tgt === id;
-  }).map(e => { const src = typeof e.source === 'object' ? e.source.id : e.source; return `<span class="text-[10px] bg-surface-container-highest px-1.5 py-0.5 rounded text-on-surface-variant">${shortName(SPECIES_NAMES[src])}</span>`; });
-  const preds = graph.edges.filter(e => {
-    const src = typeof e.source === 'object' ? e.source.id : e.source;
-    return src === id;
-  }).map(e => { const tgt = typeof e.target === 'object' ? e.target.id : e.target; return `<span class="text-[10px] bg-surface-container-highest px-1.5 py-0.5 rounded text-on-surface-variant">${shortName(SPECIES_NAMES[tgt])}</span>`; });
+  const preys = graph.edges
+    .filter(e => (typeof e.target === 'object' ? e.target.id : e.target) === id)
+    .map(e => ({ id: typeof e.source === 'object' ? e.source.id : e.source, weight: e.weight }))
+    .sort((a, b) => b.weight - a.weight);
+  const preds = graph.edges
+    .filter(e => (typeof e.source === 'object' ? e.source.id : e.source) === id)
+    .map(e => ({ id: typeof e.target === 'object' ? e.target.id : e.target, weight: e.weight }))
+    .sort((a, b) => b.weight - a.weight);
+
+  function weightBars(items, color) {
+    const maxW = Math.max(...items.map(i => i.weight), 0.01);
+    return items.map(item => `
+      <div class="flex items-center gap-2 py-[3px]">
+        <span class="text-[10px] text-on-surface-variant w-[88px] shrink-0 truncate">${shortName(SPECIES_NAMES[item.id])}</span>
+        <div class="flex-1 h-[5px] bg-surface-container-highest rounded-full overflow-hidden">
+          <div class="h-full rounded-full transition-all" style="width:${(item.weight/maxW*100).toFixed(0)}%;background:${color}99"></div>
+        </div>
+        <span class="text-[9px] text-on-surface-variant/60 w-[26px] text-right shrink-0">${item.weight.toFixed(2)}</span>
+      </div>`).join('');
+  }
 
   const wikiTitle = WIKI_TITLES[id];
   const wikiUrl = `https://en.wikipedia.org/wiki/${wikiTitle}`;
@@ -139,8 +151,8 @@ async function showInfo(id) {
           </div>
         </div>
       </div>
-      ${!n.isBasal ? `<div><p class="text-[10px] text-on-surface-variant mb-1 uppercase tracking-wider">먹이 (${preys.length}종)</p><div class="flex flex-wrap gap-1">${preys.join('')}</div></div>` : ''}
-      <div><p class="text-[10px] text-on-surface-variant mb-1 uppercase tracking-wider">포식자 (${preds.length}종)</p><div class="flex flex-wrap gap-1">${preds.join('')}</div></div>
+      ${!n.isBasal ? `<div><p class="text-[10px] text-on-surface-variant mb-2 uppercase tracking-wider">먹이 (${preys.length}종)</p>${weightBars(preys, '#5b9bd5')}</div>` : ''}
+      ${preds.length ? `<div><p class="text-[10px] text-on-surface-variant mb-2 uppercase tracking-wider">포식자 (${preds.length}종)</p>${weightBars(preds, '#e57373')}</div>` : ''}
     </div>`;
 
   const wrap = document.getElementById('wiki-img-wrap');
@@ -180,8 +192,11 @@ async function showInfo(id) {
       try {
         const tRes = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(sentences)}&langpair=en|ko&de=jaydenpark9497@gmail.com`);
         const tData = await tRes.json();
-        if (tData.responseStatus === 200 && tData.responseData?.translatedText) {
-          koText = tData.responseData.translatedText;
+        const translated = tData.responseData?.translatedText || '';
+        // 반복 패턴 감지: 같은 2글자 이상 토큰이 5번 이상 연속되면 오번역으로 판단
+        const isGarbled = /(.{2,})\1{4,}/.test(translated);
+        if (tData.responseStatus === 200 && translated && !isGarbled) {
+          koText = translated;
         }
       } catch(e) {}
     }
