@@ -148,6 +148,40 @@ sim/
 
 ---
 
+## 분석 결과
+
+### Fig.1 — Algorithm Full-Rank Heatmap (Top-5 Union)
+
+![Fig.1](images/fig1_algorithm_top5_heatmap.png)
+
+5개 알고리즘이 top-5로 선별한 종들의 합집합(13종)에 대해 각 알고리즘의 전체 랭킹 위치를 히트맵으로 표시. 색이 진할수록(낮은 숫자) 해당 알고리즘이 그 종을 중요하게 평가한 것. A. altiparana, Phytoplankton, Detritus, Insects가 3개 이상 알고리즘에서 top-5에 선택됨.
+
+---
+
+### Fig.2 — Survival Curve & AUC/R50
+
+![Fig.2](images/fig2_survival_auc.png)
+
+5개 알고리즘의 순차 제거 생존 곡선(좌) 및 AUC·R50 지표(우). AUC·R50 모두 낮을수록 생태계를 빠르게 붕괴시킨다는 의미. Kosaraju가 AUC 0.297로 가장 낮고, CI_l1·CI_l2·CoreHD는 random baseline(AUC ≈ 0.321)과 유사하거나 상회.
+
+---
+
+### Fig.3 — Performance Summary vs Reference Ranking
+
+![Fig.3](images/fig3_performance.png)
+
+(a) Spearman ρ: CI_l2(0.461) > CoreHD(0.456) > CI_l1(0.434) 순으로 reference ranking과 상관성이 높음. BC(-0.166)는 음의 상관. (b) Top-k Overlap: CoreHD가 top-10에서 reference와 7종 일치로 최고. (c) Top-k Secondary Extinction: 제거 종 수가 늘수록 모든 알고리즘이 reference에 수렴하나, top-1 단독 제거에서는 cascade가 거의 없음(θ=0.7 특성).
+
+---
+
+### Fig.4 — Sensitivity Analysis (AUC Gap over θ)
+
+![Fig.4](images/fig4_sensitivity.png)
+
+θ=0.1~1.0 범위에서 알고리즘별 AUC gap(= 알고리즘 AUC − reference AUC). gap > 0이면 reference보다 나쁜 것. BC는 전 구간에서 gap이 크고, CI·CoreHD는 θ≤0.7에서 거의 0에 근접. θ≥0.8부터 CI·CoreHD가 reference보다 오히려 나은 음수 gap 구간 진입.
+
+---
+
 ## References
 
 - Morone, F., & Makse, H. A. (2015). Influence maximization in complex networks through optimal percolation. *Nature*, 524, 65–68.
