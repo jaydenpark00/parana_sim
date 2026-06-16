@@ -43,7 +43,7 @@ self-loop 4종: Hoplias malabaricus (0.2), Other piscivores (0.1), Rhaphiodon vu
 
 $$\text{Frag Score}(v) = \Delta N_{SCC} + \frac{L_{before} - L_{after}}{L_{before}}$$
 
-- ΔN_SCC: 제거 전후 SCC 수 변화 (singleton 보정 적용)
+- ΔN_SCC: 제거 후 실제 SCC 수 − 기대 SCC 수 (v가 자명 SCC였으면 −1 보정, 비자명이면 보정 없음)
 - L_before / L_after: 제거 전후 최대 SCC 크기
 
 점수가 높을수록 제거 시 먹이그물 순환 구조가 크게 붕괴된다.
@@ -54,7 +54,7 @@ $$\text{Frag Score}(v) = \Delta N_{SCC} + \frac{L_{before} - L_{after}}{L_{befor
 
 Brandes 알고리즘으로 계산한 무방향 매개 중심성.
 
-$$BC(v) = \sum_{s \neq v \neq t} \frac{\sigma_{st}(v)}{\sigma_{st}} \cdot \frac{1}{(N-1)(N-2)}$$
+$$BC(v) = \sum_{s \neq v \neq t} \frac{\sigma_{st}(v)}{\sigma_{st}} \cdot \frac{2}{(N-1)(N-2)}$$
 
 **시간 복잡도:** O(V · (V + E)) — BFS 순방향 후 스택 역전파
 
@@ -186,4 +186,5 @@ sim/
 
 - Morone, F., & Makse, H. A. (2015). Influence maximization in complex networks through optimal percolation. *Nature*, 524, 65–68.
 - Brandes, U. (2001). A faster algorithm for betweenness centrality. *Journal of Mathematical Sociology*, 25(2), 163–177.
-- Tarjan, R. (1972). Depth-first search and linear graph algorithms. *SIAM Journal on Computing*, 1(2), 146–160.
+- Sharir, M. (1981). A strong-connectivity algorithm and its applications in data flow analysis. *Computers & Mathematics with Applications*, 7(1), 67–72.
+- Zdeborová, L., Zhang, P., & Zhou, H. J. (2016). Fast and simple decycling and dismantling of networks. *Scientific Reports*, 6, 37812.

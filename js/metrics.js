@@ -52,7 +52,7 @@ function computeBC() {
       if (w !== src.id) bc[w] += delta[w];
     }
   });
-  const N = nodes.length, norm = (N-1)*(N-2);
+  const N = nodes.length, norm = (N-1)*(N-2)/2;
   nodes.forEach(n => bc[n.id] /= norm);
   return nodes.filter(n => !n.isBasal).map(n => ({ id: n.id, score: bc[n.id] })).sort((a,b) => b.score - a.score);
 }
