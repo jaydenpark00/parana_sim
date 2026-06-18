@@ -167,18 +167,18 @@ function renderBridgeRanking(bridgeDetails, sccMeta) {
     const barWidth = Math.max(12, Math.round((b.score / maxScore) * 100));
 
     return `
-      <button class="w-full text-left rounded bg-surface-container/60 hover:bg-surface-container-highest transition-colors border border-outline-variant/10 px-2 py-1.5"
+      <button class="w-full text-left rounded bg-surface-container/60 hover:bg-surface-container-highest transition-colors border border-outline-variant/10 px-2.5 py-2"
         onclick="showInfo(${b.id})" title="${escapeHtml(SPECIES_NAMES[b.id])}">
         <div class="flex items-center gap-2">
-          <span class="text-[10px] font-bold text-primary w-5">#${i + 1}</span>
-          <span class="w-2.5 h-2.5 rounded-full flex-none" style="background:${group.color}"></span>
-          <span class="text-[11px] text-on-surface font-bold truncate">${shortName(SPECIES_NAMES[b.id])}</span>
-          <span class="ml-auto text-[10px] text-[#ff7043] font-bold">${b.score.toFixed(3)}</span>
+          <span class="text-[12px] font-bold text-primary w-6">#${i + 1}</span>
+          <span class="w-3 h-3 rounded-full flex-none" style="background:${group.color}"></span>
+          <span class="text-[12px] text-on-surface font-bold truncate">${shortName(SPECIES_NAMES[b.id])}</span>
+          <span class="ml-auto text-[12px] text-[#ff7043] font-bold">${b.score.toFixed(3)}</span>
         </div>
-        <div class="mt-1 h-1 rounded bg-surface-container-highest overflow-hidden">
+        <div class="mt-1.5 h-1.5 rounded bg-surface-container-highest overflow-hidden">
           <div class="h-full rounded bg-[#ff7043]" style="width:${barWidth}%"></div>
         </div>
-        <div class="mt-1 flex items-center gap-1 flex-wrap text-[9px] text-on-surface-variant">
+        <div class="mt-1 flex items-center gap-1.5 flex-wrap text-[11px] text-on-surface-variant">
           <span>${group.label}</span>
           <span>out ${b.outgoing}</span>
           <span>in ${b.incoming}</span>
@@ -214,22 +214,22 @@ function renderSccKeySpecies(fragScores, sccMeta) {
       html += `
         <div class="px-3 py-2.5 border-b border-outline-variant/10">
           <div class="flex items-center gap-2 mb-2">
-            <span class="w-2.5 h-2.5 rounded-full flex-none" style="background:${group.color}"></span>
-            <span class="font-bold text-on-surface text-[11px]">${group.label}</span>
-            <span class="text-[10px] px-1.5 py-0.5 rounded" style="background:${group.color}22;color:${group.color};border:1px solid ${group.color}44">${group.nodes.length}종</span>
+            <span class="w-3 h-3 rounded-full flex-none" style="background:${group.color}"></span>
+            <span class="font-bold text-on-surface text-[13px]">${group.label}</span>
+            <span class="text-[11px] px-1.5 py-0.5 rounded" style="background:${group.color}22;color:${group.color};border:1px solid ${group.color}44">${group.nodes.length}종</span>
           </div>
-          <div class="space-y-0.5">
+          <div class="space-y-1">
             ${sorted.map((item, i) => {
               const barW = Math.max(4, Math.round((item.score / maxScore) * 100));
               const isBridge = item.score > 0;
               const barColor = isBridge ? '#ff7043' : '#37474f';
-              return `<button class="w-full text-left flex items-center gap-2 px-1.5 py-1 rounded hover:bg-surface-container-highest/40 transition-colors" onclick="showInfo(${item.id})">
-                <span class="text-[9px] text-on-surface-variant/60 w-4 text-right shrink-0">${i + 1}</span>
-                <span class="text-[10px] text-on-surface truncate" style="width:110px">${shortName(SPECIES_NAMES[item.id])}</span>
-                <div class="flex-1 h-[4px] rounded bg-surface-container-highest overflow-hidden">
+              return `<button class="w-full text-left flex items-center gap-2 px-2 py-1.5 rounded hover:bg-surface-container-highest/40 transition-colors" onclick="showInfo(${item.id})">
+                <span class="text-[11px] text-on-surface-variant/60 w-5 text-right shrink-0">${i + 1}</span>
+                <span class="text-[12px] text-on-surface truncate" style="width:120px">${shortName(SPECIES_NAMES[item.id])}</span>
+                <div class="flex-1 h-[6px] rounded bg-surface-container-highest overflow-hidden">
                   <div class="h-full rounded" style="width:${barW}%;background:${barColor}"></div>
                 </div>
-                <span class="text-[9px] font-mono w-[38px] text-right shrink-0" style="color:${isBridge ? '#ff7043' : '#455a64'}">${item.score.toFixed(3)}</span>
+                <span class="text-[11px] font-mono w-[44px] text-right shrink-0" style="color:${isBridge ? '#ff7043' : '#455a64'}">${item.score.toFixed(3)}</span>
               </button>`;
             }).join('')}
           </div>
@@ -244,13 +244,13 @@ function renderSccKeySpecies(fragScores, sccMeta) {
     html += `
       <div class="px-3 py-2.5">
         <div class="flex items-center gap-2 mb-2">
-          <span class="text-[11px] text-on-surface-variant font-bold">단독 노드 (SCC 크기 1)</span>
-          <span class="text-[10px] px-1.5 py-0.5 rounded bg-surface-container-highest text-on-surface-variant">${trivial.length}종</span>
+          <span class="text-[13px] text-on-surface-variant font-bold">단독 노드 (SCC 크기 1)</span>
+          <span class="text-[11px] px-1.5 py-0.5 rounded bg-surface-container-highest text-on-surface-variant">${trivial.length}종</span>
         </div>
         <div class="flex flex-wrap gap-1">
           ${trivialSorted.map(item => {
             const isBridge = item.score > 0;
-            return `<span class="text-[9px] px-1.5 py-0.5 rounded cursor-pointer"
+            return `<span class="text-[11px] px-2 py-1 rounded cursor-pointer"
               style="background:${isBridge ? 'rgba(255,112,67,0.10)' : 'rgba(255,255,255,0.04)'};
                      color:${isBridge ? '#ff7043' : 'rgba(207,230,242,0.45)'};
                      border:1px solid ${isBridge ? 'rgba(255,112,67,0.25)' : 'rgba(140,147,135,0.10)'}"
