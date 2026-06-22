@@ -6,6 +6,14 @@
 
 ---
 
+## 스크린샷
+
+| 네트워크 그래프 | 연쇄 멸종 시뮬레이션 | Top-5 Extinction 비교 분석 |
+|---|---|---|
+| ![네트워크 그래프](images/2.png) | ![연쇄 멸종 시뮬레이션](images/1.png) | ![비교 분석](images/3.png) |
+
+---
+
 ## 데이터셋
 
 - **종 수:** 40종 (어류 26종 + 무척추동물·플랑크톤·식물·비생물 에너지원 14개 그룹)
@@ -52,9 +60,9 @@ $$\text{Frag Score}(v) = \Delta N_{SCC} + \frac{L_{before} - L_{after}}{L_{befor
 
 ### 3. 매개 중심성 (Betweenness Centrality, BC)
 
-Brandes 알고리즘으로 계산한 무방향 매개 중심성.
+Brandes 알고리즘으로 계산한 **유방향** 매개 중심성. Python `nx.betweenness_centrality(G_alg, weight=None)` 결과와 일치.
 
-$$BC(v) = \sum_{s \neq v \neq t} \frac{\sigma_{st}(v)}{\sigma_{st}} \cdot \frac{2}{(N-1)(N-2)}$$
+$$BC(v) = \sum_{s \neq v \neq t} \frac{\sigma_{st}(v)}{\sigma_{st}} \cdot \frac{1}{(N-1)(N-2)}$$
 
 **시간 복잡도:** O(V · (V + E)) — BFS 순방향 후 스택 역전파
 
@@ -95,7 +103,7 @@ while 남은 노드가 있을 때:
 
 **멸종 조건:** 먹이 손실 비율이 θ 이상이면 멸종
 
-$$\frac{rem_v}{initial_v} < 1 - \theta \quad (\text{즉, 먹이의 70\% 이상 손실})$$
+$$\frac{rem_v}{initial_v} \leq (1 - \theta) + \varepsilon \quad (\varepsilon = 10^{-9}, \text{ 즉 손실률} \geq \theta)$$
 
 self-loop 보유 종은 자신이 살아있는 동안 self-loop weight를 rem에 항상 포함.
 
@@ -105,23 +113,23 @@ repeat:
     for each non-extinct, non-basal node v:
         rem = Σ w(u→v) for u ∉ extinct
         rem += SELF_LOOP_WEIGHTS[v]  # if exists
-        if rem / v.initialPreyWeight < (1 - θ):
-            mark v extinct
+        if rem / v.initialPreyWeight <= (1 - θ) + 1e-9:
+            mark v extinct (next wave)
 until no new extinctions
 ```
 
 ---
 
-### 7. 5-Way 비교 분석
+### 7. Top-5 Extinction 비교 분석
 
-5개 지표로 각각 상위 5종을 제거한 뒤 WTECM cascade를 실행해 결과를 비교한다.
+5개 지표로 각각 상위 5종을 제거한 뒤 WTECM cascade(θ=0.7)를 실행해 결과를 비교한다.
 
 | 지표 | 기반 그래프 | 특징 |
 |------|-------------|------|
-| BC | G_alg 무방향 | 최단 경로 병목 탐지 |
-| CI l=2 | G_alg 무방향 | 2홉 이웃 기반 네트워크 분리 |
+| Kosaraju + SCC Frag | G_alg 유방향 | SCC 구조 파편화 최대화 |
+| BC | G_alg 유방향 | 유방향 최단 경로 병목 탐지 |
 | CI l=1 | G_alg 무방향 | 1홉 이웃 기반 (빠른 근사) |
-| SCC Frag Score | G_alg 유방향 | SCC 구조 파편화 최대화 |
+| CI l=2 | G_alg 무방향 | 2홉 이웃 기반 네트워크 분리 |
 | CoreHD | G_alg 무방향 | 2-core 반복 해체 |
 
 ---
@@ -137,48 +145,14 @@ sim/
 │   ├── data.js           # 종 목록, RAW_EDGES, SELF_LOOP_WEIGHTS, Wikipedia 제목, 한국어 설명
 │   ├── graph-core.js     # buildGraph(), runCascade()
 │   ├── metrics.js        # computeBC(), computeCI(), computeCI1(), computeSCCFragScore(),
-│   │                     # computeCoreHD(), computeSCC(), computeSCCKosaraju()
+│   │                     # computeSCCKosaraju(), computeCoreHD(), buildWaveStates()
 │   ├── network-view.js   # D3 force-directed 그래프, 종 정보 패널 (Wikipedia/iNaturalist)
-│   ├── scc-analysis.js   # SCC 분석 탭 — 응집 그래프, 브리지 랭킹, SCC별 핵심종
-│   ├── comparison.js     # 5-Way 비교 분석 탭
+│   ├── comparison.js     # Top-5 Extinction 비교 분석 탭 (5개 알고리즘 동시 비교)
+│   ├── wtecm-sim.js      # WTECM 연쇄 멸종 시뮬레이션 탭 (최대 5종 선택, θ 조절)
 │   ├── view-router.js    # 탭 전환
 │   └── tailwind-config.js
 └── images/
 ```
-
----
-
-## 분석 결과
-
-### Fig.1 — Algorithm Full-Rank Heatmap (Top-5 Union)
-
-![Fig.1](images/fig1_algorithm_top5_heatmap.png)
-
-5개 알고리즘이 top-5로 선별한 종들의 합집합(13종)에 대해 각 알고리즘의 전체 랭킹 위치를 히트맵으로 표시. 색이 진할수록(낮은 숫자) 해당 알고리즘이 그 종을 중요하게 평가한 것. A. altiparana, Phytoplankton, Detritus, Insects가 3개 이상 알고리즘에서 top-5에 선택됨.
-
----
-
-### Fig.2 — Survival Curve & AUC/R50
-
-![Fig.2](images/fig2_survival_auc.png)
-
-5개 알고리즘의 순차 제거 생존 곡선(좌) 및 AUC·R50 지표(우). AUC·R50 모두 낮을수록 생태계를 빠르게 붕괴시킨다는 의미. Kosaraju가 AUC 0.297로 가장 낮고, CI_l1·CI_l2·CoreHD는 random baseline(AUC ≈ 0.321)과 유사하거나 상회.
-
----
-
-### Fig.3 — Performance Summary vs Reference Ranking
-
-![Fig.3](images/fig3_performance.png)
-
-(a) Spearman ρ: CI_l2(0.461) > CoreHD(0.456) > CI_l1(0.434) 순으로 reference ranking과 상관성이 높음. BC(-0.166)는 음의 상관. (b) Top-k Overlap: CoreHD가 top-10에서 reference와 7종 일치로 최고. (c) Top-k Secondary Extinction: 제거 종 수가 늘수록 모든 알고리즘이 reference에 수렴하나, top-1 단독 제거에서는 cascade가 거의 없음(θ=0.7 특성).
-
----
-
-### Fig.4 — Sensitivity Analysis (AUC Gap over θ)
-
-![Fig.4](images/fig4_sensitivity.png)
-
-θ=0.1~1.0 범위에서 알고리즘별 AUC gap(= 알고리즘 AUC − reference AUC). gap > 0이면 reference보다 나쁜 것. BC는 전 구간에서 gap이 크고, CI·CoreHD는 θ≤0.7에서 거의 0에 근접. θ≥0.8부터 CI·CoreHD가 reference보다 오히려 나은 음수 gap 구간 진입.
 
 ---
 
