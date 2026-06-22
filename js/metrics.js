@@ -26,9 +26,9 @@ function buildDirAdj() {
   return adj;
 }
 
-// Betweenness Centrality — Brandes algorithm, undirected
+// Betweenness Centrality — Brandes algorithm, directed (matches nx.betweenness_centrality)
 function computeBC() {
-  const { adj } = buildUndirAdj();
+  const adj = buildDirAdj();
   const nodes = graph.nodes;
   const bc = {};
   nodes.forEach(n => bc[n.id] = 0);
@@ -52,9 +52,9 @@ function computeBC() {
       if (w !== src.id) bc[w] += delta[w];
     }
   });
-  const N = nodes.length, norm = (N-1)*(N-2)/2;
+  const N = nodes.length, norm = (N-1)*(N-2);
   nodes.forEach(n => bc[n.id] /= norm);
-  return nodes.filter(n => !n.isBasal).map(n => ({ id: n.id, score: bc[n.id] })).sort((a,b) => b.score - a.score);
+  return nodes.filter(n => !n.isBasal).map(n => ({ id: n.id, score: bc[n.id] })).sort((a,b) => b.score - a.score || a.id - b.id);
 }
 
 // Collective Influence — l=2 (Morone & Makse 2015)
@@ -76,7 +76,7 @@ function computeCI() {
     const ball2 = getBall2(n.id, adj);
     const ci = (ki - 1) * [...ball2].reduce((s, j) => s + (deg[j] - 1), 0);
     return { id: n.id, score: ci };
-  }).sort((a,b) => b.score - a.score);
+  }).sort((a,b) => b.score - a.score || a.id - b.id);
 }
 
 // Tarjan SCC
@@ -180,7 +180,7 @@ function computeCI1() {
     const frontier = adj[n.id]; // Set of 1-hop neighbors
     const ci = (ki - 1) * [...frontier].reduce((s, j) => s + (deg[j] - 1), 0);
     return { id: n.id, score: ci };
-  }).sort((a, b) => b.score - a.score);
+  }).sort((a, b) => b.score - a.score || a.id - b.id);
 }
 
 // ── SCC Fragmentation Score ────────────────────────────────────────────────

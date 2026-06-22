@@ -25,8 +25,8 @@
       <span class="font-body-md text-body-md">네트워크 그래프</span>
     </a>
     <a id="nav-analysis" class="flex items-center gap-base px-gutter py-base text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#" onclick="showView('analysis');return false;">
-      <span class="material-symbols-outlined">account_tree</span>
-      <span class="font-body-md text-body-md">SCC 분석</span>
+      <span class="material-symbols-outlined">crisis_alert</span>
+      <span class="font-body-md text-body-md">연쇄 멸종 시뮬레이션</span>
     </a>
     <a id="nav-compare" class="flex items-center gap-base px-gutter py-base text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#" onclick="showView('compare');return false;">
       <span class="material-symbols-outlined">compare_arrows</span>
@@ -133,8 +133,8 @@
   <!-- Top bar -->
   <header class="flex-none flex justify-between items-center h-14 bg-surface border-b border-outline-variant/10 px-gutter z-40">
     <div>
-      <h2 class="font-headline-sm text-headline-sm font-bold text-primary">5-Way Robustness</h2>
-      <span class="font-label-md text-label-md text-on-surface-variant opacity-60 text-[11px]">BC · CI_l2 · CI_l1 · SCC Frag · CoreHD</span>
+      <h2 class="font-headline-sm text-headline-sm font-bold text-primary">Top-5 Extinction</h2>
+      <span class="font-label-md text-label-md text-on-surface-variant opacity-60 text-[11px]">Kosaraju+SCC · BC · CI(l=1) · CI(l=2) · CoreHD</span>
     </div>
     <div class="flex items-center gap-2 bg-surface-container-highest rounded-xl px-3 py-1.5 border border-outline-variant/20">
       <button onclick="cmpReset()" class="p-1 text-on-surface-variant hover:text-primary transition-colors" title="Reset">
@@ -157,84 +157,10 @@
     </div>
   </header>
 
-  <!-- 3 panels stacked vertically, each panel horizontal -->
+  <!-- 5 panels stacked vertically, each panel horizontal -->
   <div class="flex-1 flex flex-col gap-2 p-3 overflow-hidden">
 
-    <!-- BC Panel -->
-    <div class="flex-1 glass-card rounded-xl flex flex-row overflow-hidden min-h-0">
-      <!-- Graph left -->
-      <div id="bc-graph-container" class="flex-none relative bg-[#001018] border-r border-outline-variant/10" style="width:45%">
-        <svg id="bc-svg" width="100%" height="100%"></svg>
-      </div>
-      <!-- Info right -->
-      <div class="flex-1 flex flex-col overflow-hidden min-w-0">
-        <div class="flex-none flex items-center justify-between px-4 py-2 border-b border-outline-variant/10 bg-surface-container-low/40">
-          <div>
-            <h3 class="font-label-md text-label-md font-bold text-on-surface uppercase tracking-wider text-[11px]">BC Targeted</h3>
-            <p class="text-[10px] text-on-surface-variant">Betweenness Centrality</p>
-          </div>
-          <div class="flex items-center gap-3">
-            <div id="bc-ranking-bar" class="flex flex-wrap gap-1"></div>
-            <div class="text-right leading-none border-l border-outline-variant/20 pl-3">
-              <span id="bc-alive" class="font-data-mono text-[20px] font-bold text-primary">40</span>
-              <span class="text-[10px] text-on-surface-variant"> / 40</span>
-              <p class="text-[9px] text-on-surface-variant uppercase tracking-wider">생존</p>
-            </div>
-          </div>
-        </div>
-        <div id="bc-ext-log" class="flex-1 overflow-y-auto px-4 py-2 space-y-1.5"></div>
-      </div>
-    </div>
-
-    <!-- CI(l=2) Panel -->
-    <div class="flex-1 glass-card rounded-xl flex flex-row overflow-hidden min-h-0">
-      <div id="ci2-graph-container" class="flex-none relative bg-[#001018] border-r border-outline-variant/10" style="width:45%">
-        <svg id="ci2-svg" width="100%" height="100%"></svg>
-      </div>
-      <div class="flex-1 flex flex-col overflow-hidden min-w-0">
-        <div class="flex-none flex items-center justify-between px-4 py-2 border-b border-outline-variant/10 bg-surface-container-low/40">
-          <div>
-            <h3 class="font-label-md text-label-md font-bold text-on-surface uppercase tracking-wider text-[11px]">CI Targeted</h3>
-            <p class="text-[10px] text-on-surface-variant">Collective Influence (l=2)</p>
-          </div>
-          <div class="flex items-center gap-3">
-            <div id="ci2-ranking-bar" class="flex flex-wrap gap-1"></div>
-            <div class="text-right leading-none border-l border-outline-variant/20 pl-3">
-              <span id="ci2-alive" class="font-data-mono text-[20px] font-bold text-primary">40</span>
-              <span class="text-[10px] text-on-surface-variant"> / 40</span>
-              <p class="text-[9px] text-on-surface-variant uppercase tracking-wider">생존</p>
-            </div>
-          </div>
-        </div>
-        <div id="ci2-ext-log" class="flex-1 overflow-y-auto px-4 py-2 space-y-1.5"></div>
-      </div>
-    </div>
-
-    <!-- CI(l=1) Panel -->
-    <div class="flex-1 glass-card rounded-xl flex flex-row overflow-hidden min-h-0">
-      <div id="ci1-graph-container" class="flex-none relative bg-[#001018] border-r border-outline-variant/10" style="width:45%">
-        <svg id="ci1-svg" width="100%" height="100%"></svg>
-      </div>
-      <div class="flex-1 flex flex-col overflow-hidden min-w-0">
-        <div class="flex-none flex items-center justify-between px-4 py-2 border-b border-outline-variant/10 bg-surface-container-low/40">
-          <div>
-            <h3 class="font-label-md text-label-md font-bold text-on-surface uppercase tracking-wider text-[11px]">CI Targeted</h3>
-            <p class="text-[10px] text-on-surface-variant">Collective Influence (l=1)</p>
-          </div>
-          <div class="flex items-center gap-3">
-            <div id="ci1-ranking-bar" class="flex flex-wrap gap-1"></div>
-            <div class="text-right leading-none border-l border-outline-variant/20 pl-3">
-              <span id="ci1-alive" class="font-data-mono text-[20px] font-bold text-primary">40</span>
-              <span class="text-[10px] text-on-surface-variant"> / 40</span>
-              <p class="text-[9px] text-on-surface-variant uppercase tracking-wider">생존</p>
-            </div>
-          </div>
-        </div>
-        <div id="ci1-ext-log" class="flex-1 overflow-y-auto px-4 py-2 space-y-1.5"></div>
-      </div>
-    </div>
-
-    <!-- SCC Frag Panel -->
+    <!-- Kosaraju + SCC Frag Panel -->
     <div class="flex-1 glass-card rounded-xl flex flex-row overflow-hidden min-h-0">
       <div id="scc-graph-container" class="flex-none relative bg-[#001018] border-r border-outline-variant/10" style="width:45%">
         <svg id="scc-svg" width="100%" height="100%"></svg>
@@ -242,7 +168,7 @@
       <div class="flex-1 flex flex-col overflow-hidden min-w-0">
         <div class="flex-none flex items-center justify-between px-4 py-2 border-b border-outline-variant/10 bg-surface-container-low/40">
           <div>
-            <h3 class="font-label-md text-label-md font-bold text-on-surface uppercase tracking-wider text-[11px]">SCC Frag</h3>
+            <h3 class="font-label-md text-label-md font-bold text-on-surface uppercase tracking-wider text-[11px]">Kosaraju + SCC Frag</h3>
             <p class="text-[10px] text-on-surface-variant">SCC Fragmentation Score</p>
           </div>
           <div class="flex items-center gap-3">
@@ -258,6 +184,78 @@
       </div>
     </div>
 
+    <!-- BC Panel -->
+    <div class="flex-1 glass-card rounded-xl flex flex-row overflow-hidden min-h-0">
+      <div id="bc-graph-container" class="flex-none relative bg-[#001018] border-r border-outline-variant/10" style="width:45%">
+        <svg id="bc-svg" width="100%" height="100%"></svg>
+      </div>
+      <div class="flex-1 flex flex-col overflow-hidden min-w-0">
+        <div class="flex-none flex items-center justify-between px-4 py-2 border-b border-outline-variant/10 bg-surface-container-low/40">
+          <div>
+            <h3 class="font-label-md text-label-md font-bold text-on-surface uppercase tracking-wider text-[11px]">BC</h3>
+            <p class="text-[10px] text-on-surface-variant">Betweenness Centrality</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <div id="bc-ranking-bar" class="flex flex-wrap gap-1"></div>
+            <div class="text-right leading-none border-l border-outline-variant/20 pl-3">
+              <span id="bc-alive" class="font-data-mono text-[20px] font-bold text-primary">40</span>
+              <span class="text-[10px] text-on-surface-variant"> / 40</span>
+              <p class="text-[9px] text-on-surface-variant uppercase tracking-wider">생존</p>
+            </div>
+          </div>
+        </div>
+        <div id="bc-ext-log" class="flex-1 overflow-y-auto px-4 py-2 space-y-1.5"></div>
+      </div>
+    </div>
+
+    <!-- CI(l=1) Panel -->
+    <div class="flex-1 glass-card rounded-xl flex flex-row overflow-hidden min-h-0">
+      <div id="ci1-graph-container" class="flex-none relative bg-[#001018] border-r border-outline-variant/10" style="width:45%">
+        <svg id="ci1-svg" width="100%" height="100%"></svg>
+      </div>
+      <div class="flex-1 flex flex-col overflow-hidden min-w-0">
+        <div class="flex-none flex items-center justify-between px-4 py-2 border-b border-outline-variant/10 bg-surface-container-low/40">
+          <div>
+            <h3 class="font-label-md text-label-md font-bold text-on-surface uppercase tracking-wider text-[11px]">CI (l=1)</h3>
+            <p class="text-[10px] text-on-surface-variant">Collective Influence (l=1)</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <div id="ci1-ranking-bar" class="flex flex-wrap gap-1"></div>
+            <div class="text-right leading-none border-l border-outline-variant/20 pl-3">
+              <span id="ci1-alive" class="font-data-mono text-[20px] font-bold text-primary">40</span>
+              <span class="text-[10px] text-on-surface-variant"> / 40</span>
+              <p class="text-[9px] text-on-surface-variant uppercase tracking-wider">생존</p>
+            </div>
+          </div>
+        </div>
+        <div id="ci1-ext-log" class="flex-1 overflow-y-auto px-4 py-2 space-y-1.5"></div>
+      </div>
+    </div>
+
+    <!-- CI(l=2) Panel -->
+    <div class="flex-1 glass-card rounded-xl flex flex-row overflow-hidden min-h-0">
+      <div id="ci2-graph-container" class="flex-none relative bg-[#001018] border-r border-outline-variant/10" style="width:45%">
+        <svg id="ci2-svg" width="100%" height="100%"></svg>
+      </div>
+      <div class="flex-1 flex flex-col overflow-hidden min-w-0">
+        <div class="flex-none flex items-center justify-between px-4 py-2 border-b border-outline-variant/10 bg-surface-container-low/40">
+          <div>
+            <h3 class="font-label-md text-label-md font-bold text-on-surface uppercase tracking-wider text-[11px]">CI (l=2)</h3>
+            <p class="text-[10px] text-on-surface-variant">Collective Influence (l=2)</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <div id="ci2-ranking-bar" class="flex flex-wrap gap-1"></div>
+            <div class="text-right leading-none border-l border-outline-variant/20 pl-3">
+              <span id="ci2-alive" class="font-data-mono text-[20px] font-bold text-primary">40</span>
+              <span class="text-[10px] text-on-surface-variant"> / 40</span>
+              <p class="text-[9px] text-on-surface-variant uppercase tracking-wider">생존</p>
+            </div>
+          </div>
+        </div>
+        <div id="ci2-ext-log" class="flex-1 overflow-y-auto px-4 py-2 space-y-1.5"></div>
+      </div>
+    </div>
+
     <!-- CoreHD Panel -->
     <div class="flex-1 glass-card rounded-xl flex flex-row overflow-hidden min-h-0">
       <div id="corehd-graph-container" class="flex-none relative bg-[#001018] border-r border-outline-variant/10" style="width:45%">
@@ -266,7 +264,7 @@
       <div class="flex-1 flex flex-col overflow-hidden min-w-0">
         <div class="flex-none flex items-center justify-between px-4 py-2 border-b border-outline-variant/10 bg-surface-container-low/40">
           <div>
-            <h3 class="font-label-md text-label-md font-bold text-on-surface uppercase tracking-wider text-[11px]">CoreHD Targeted</h3>
+            <h3 class="font-label-md text-label-md font-bold text-on-surface uppercase tracking-wider text-[11px]">CoreHD</h3>
             <p class="text-[10px] text-on-surface-variant">2-Core Decomposition</p>
           </div>
           <div class="flex items-center gap-3">
@@ -295,94 +293,106 @@
   </div>
 </div>
 
-<!-- ── SCC Analysis View ──────────────────────────────────────────────── -->
+<!-- ── WTECM Cascade Simulation View ──────────────────────────────────── -->
 <div id="analysis-view" class="hidden flex flex-col" style="margin-left:260px;height:100vh;width:calc(100vw - 260px)">
 
   <!-- Header -->
   <header class="flex-none flex justify-between items-center h-14 bg-surface border-b border-outline-variant/10 px-gutter z-40 flex-shrink-0">
     <div>
-      <h2 class="font-headline-sm text-headline-sm font-bold text-primary">SCC 강연결 요소 분석</h2>
-      <span class="font-label-md text-label-md text-on-surface-variant opacity-60 text-[11px]">SCC 구조 분석 · 브리지 노드 · 핵심종</span>
+      <h2 class="font-headline-sm text-headline-sm font-bold text-primary">WTECM 연쇄 멸종 시뮬레이션</h2>
+      <span class="font-label-md text-label-md text-on-surface-variant opacity-60 text-[11px]">그래프에서 종을 클릭하여 초기 멸종 설정</span>
     </div>
-    <div class="flex items-center gap-4">
-      <div class="flex gap-3">
-        <div class="text-center">
-          <p id="scc-total" class="font-data-mono text-[20px] font-bold text-primary leading-none">—</p>
-          <p class="text-[9px] text-on-surface-variant uppercase tracking-wider mt-0.5">총 SCC</p>
-        </div>
-        <div class="text-center border-l border-outline-variant/20 pl-3">
-          <p id="scc-nontrivial" class="font-data-mono text-[20px] font-bold text-error leading-none">—</p>
-          <p class="text-[9px] text-on-surface-variant uppercase tracking-wider mt-0.5">비자명 SCC</p>
-        </div>
-        <div class="text-center border-l border-outline-variant/20 pl-3">
-          <p id="scc-maxsize" class="font-data-mono text-[20px] font-bold text-secondary leading-none">—</p>
-          <p class="text-[9px] text-on-surface-variant uppercase tracking-wider mt-0.5">최대 크기</p>
-        </div>
-        <div class="text-center border-l border-outline-variant/20 pl-3">
-          <p id="scc-bridge" class="font-data-mono text-[20px] font-bold text-on-surface leading-none">—</p>
-          <p class="text-[9px] text-on-surface-variant uppercase tracking-wider mt-0.5">브리지 노드</p>
-        </div>
+    <div class="flex items-center gap-2">
+      <!-- θ slider -->
+      <div class="flex items-center gap-2 bg-surface-container-highest rounded-xl px-3 py-1.5 border border-outline-variant/20">
+        <span class="font-label-md text-label-md text-on-surface-variant text-[11px]">θ</span>
+        <input type="range" id="wtecm-theta-slider" min="1" max="10" value="7" step="1"
+          class="w-20 accent-primary h-1" oninput="setWtecmTheta(+this.value / 10)"/>
+        <span id="wtecm-theta-label" class="font-data-mono text-data-mono text-primary w-7 text-[12px]">0.7</span>
+      </div>
+      <!-- Wave controls -->
+      <div class="flex items-center gap-2 bg-surface-container-highest rounded-xl px-3 py-1.5 border border-outline-variant/20">
+        <button onclick="wtecmReset()" class="p-1 text-on-surface-variant hover:text-primary transition-colors" title="Reset">
+          <span class="material-symbols-outlined text-[18px]">restart_alt</span>
+        </button>
+        <button onclick="wtecmStepPrev()" class="p-1 text-on-surface-variant hover:text-primary transition-colors">
+          <span class="material-symbols-outlined text-[18px]">skip_previous</span>
+        </button>
+        <span class="font-label-md text-label-md text-on-surface-variant text-[11px]">Wave</span>
+        <input type="range" id="wtecm-slider" min="0" max="0" value="0"
+          class="w-28 accent-primary h-1" oninput="setWtecmWave(+this.value)"/>
+        <span id="wtecm-wave-label" class="font-data-mono text-data-mono text-primary w-12 text-[12px]">— / —</span>
+        <button onclick="wtecmStepNext()" class="p-1 text-on-surface-variant hover:text-primary transition-colors">
+          <span class="material-symbols-outlined text-[18px]">skip_next</span>
+        </button>
+        <button onclick="wtecmEnd()" class="px-2 py-1 text-[10px] font-label-md bg-error/10 text-error rounded hover:bg-error/20 transition-colors border border-error/20">END</button>
+        <button onclick="wtecmTogglePlay()" id="wtecm-play-btn" class="p-1 text-on-surface-variant hover:text-primary transition-colors">
+          <span class="material-symbols-outlined text-[18px]">play_arrow</span>
+        </button>
       </div>
     </div>
   </header>
 
-  <!-- Main: graph left + info panels right -->
+  <!-- Main content -->
   <div class="flex-1 flex gap-2 p-3 overflow-hidden min-h-0">
 
-    <!-- SCC Network (확장) -->
-    <div class="flex-none glass-card rounded-xl overflow-hidden flex flex-col min-h-0" style="width:50%">
-      <div class="flex-none px-4 py-2.5 border-b border-outline-variant/10 bg-surface-container-low/40">
-        <h3 class="font-label-md text-label-md font-bold text-on-surface uppercase tracking-wider text-[11px]">SCC 응집 그래프</h3>
-        <p class="text-[10px] text-on-surface-variant mt-0.5">구역 = SCC 역할 &nbsp;|&nbsp; 버블 = SCC 묶음 &nbsp;|&nbsp; 주황 선 = 주요 연결 &nbsp;|&nbsp; <span style="color:#ff7043">B</span> = 브리지 노드</p>
+    <!-- Network graph -->
+    <div class="flex-none glass-card rounded-xl overflow-hidden flex flex-col min-h-0" style="width:62%">
+      <div class="flex-none px-4 py-2 border-b border-outline-variant/10 bg-surface-container-low/40">
+        <h3 class="font-label-md text-label-md font-bold text-on-surface uppercase tracking-wider text-[11px]">먹이망 네트워크 <span class="text-on-surface-variant font-normal normal-case tracking-normal">— 최대 5종 클릭 선택 (다시 클릭 시 해제)</span></h3>
       </div>
-      <div id="scc-net-container" class="flex-1 bg-[#001018] relative min-h-0">
-        <svg id="scc-net-svg" width="100%" height="100%"></svg>
+      <div id="wtecm-graph-container" class="flex-1 bg-[#001018] relative min-h-0">
+        <svg id="wtecm-svg" width="100%" height="100%"></svg>
       </div>
     </div>
 
-    <!-- Right panels -->
+    <!-- Info panel -->
     <div class="flex-1 flex flex-col gap-2 overflow-hidden min-h-0">
-
-      <!-- 해석 + 브리지 랭킹 -->
-      <div class="grid grid-cols-[1fr_1.18fr] gap-2 min-h-0" style="flex:0 0 40%">
-        <div class="glass-card rounded-xl flex flex-col overflow-hidden min-h-0">
-          <div class="flex-none px-4 py-2 border-b border-outline-variant/10 bg-surface-container-low/40">
-            <h3 class="font-label-md text-label-md font-bold text-on-surface uppercase tracking-wider text-[11px]">SCC 해석</h3>
+      <!-- Stats -->
+      <div class="glass-card rounded-xl flex-none px-4 py-3 flex flex-col gap-2">
+        <!-- Chips row -->
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex items-center gap-1.5 flex-none">
+            <p class="text-[10px] text-on-surface-variant uppercase tracking-wider">선택</p>
+            <span id="wtecm-select-count" class="text-[10px] font-bold text-primary">0 / 5</span>
           </div>
-          <div id="scc-meaning-panel" class="flex-1 p-3 text-[11px] text-on-surface-variant space-y-2 overflow-y-auto"></div>
+          <div class="flex gap-4 flex-none">
+            <div class="text-right">
+              <span id="wtecm-alive" class="font-data-mono text-[22px] font-bold text-primary">40</span>
+              <span class="text-[10px] text-on-surface-variant"> / 40</span>
+              <p class="text-[9px] text-on-surface-variant uppercase tracking-wider">생존</p>
+            </div>
+            <div class="text-right border-l border-outline-variant/20 pl-3">
+              <span id="wtecm-extinct-count" class="font-data-mono text-[22px] font-bold text-error">0</span>
+              <p class="text-[9px] text-on-surface-variant uppercase tracking-wider">멸종</p>
+            </div>
+          </div>
         </div>
-
-        <div class="glass-card rounded-xl flex flex-col overflow-hidden min-h-0">
-          <div class="flex-none px-4 py-2 border-b border-outline-variant/10 bg-surface-container-low/40 flex items-center justify-between">
-            <h3 class="font-label-md text-label-md font-bold text-on-surface uppercase tracking-wider text-[11px]">브리지 노드 랭킹</h3>
-            <span class="text-[10px] text-on-surface-variant">SCC Frag Score 기준</span>
-          </div>
-          <div id="bridge-rank-list" class="flex-1 overflow-y-auto px-3 py-2 space-y-1.5"></div>
+        <!-- Selected species chips -->
+        <div id="wtecm-selected-chips" class="flex flex-wrap gap-1.5 min-h-[22px]">
+          <span style="color:#42493e;font-size:10px;line-height:22px;">종을 클릭하세요</span>
         </div>
       </div>
-
-      <!-- SCC별 핵심종 -->
+      <!-- Extinction log -->
       <div class="flex-1 glass-card rounded-xl flex flex-col overflow-hidden min-h-0">
-        <div class="flex-none px-4 py-2 border-b border-outline-variant/10 bg-surface-container-low/40 flex items-center justify-between">
-          <div>
-            <h3 class="font-label-md text-label-md font-bold text-on-surface uppercase tracking-wider text-[11px]">SCC별 핵심종</h3>
-            <p class="text-[10px] text-on-surface-variant mt-0.5">각 SCC 내 종을 SCC Fragmentation Score 기준으로 정렬</p>
-          </div>
+        <div class="flex-none px-4 py-2 border-b border-outline-variant/10 bg-surface-container-low/40">
+          <h3 class="font-label-md text-label-md font-bold text-on-surface uppercase tracking-wider text-[11px]">멸종 로그</h3>
         </div>
-        <div id="scc-keyspecies-list" class="flex-1 overflow-y-auto text-[11px]"></div>
+        <div id="wtecm-ext-log" class="flex-1 overflow-y-auto px-4 py-2 space-y-1.5">
+          <p style="color:#42493e;font-size:10px;padding:4px 0;">종을 선택하면 cascade가 시작됩니다</p>
+        </div>
       </div>
-
     </div>
   </div>
 
   <!-- Legend -->
   <div class="flex-none px-3 pb-2">
     <div class="glass-card rounded-lg px-4 py-2 flex items-center gap-5 flex-wrap">
-      <span class="font-label-md text-label-md text-on-surface-variant uppercase text-[10px]">범례</span>
-      <span class="flex items-center gap-1.5 text-[11px]"><span class="w-2 h-2 rounded-full bg-[#4caf50] inline-block"></span>기초 생산자</span>
-      <span class="flex items-center gap-1.5 text-[11px]"><span class="w-2 h-2 rounded-full bg-[#5b9bd5] inline-block"></span>자명 SCC (크기 1)</span>
-      <span class="flex items-center gap-1.5 text-[11px]"><span class="w-2 h-2 rounded-full bg-[#ef5350] inline-block"></span>비자명 SCC (색상 = 그룹)</span>
-      <span class="flex items-center gap-1.5 text-[11px]"><span class="w-3.5 h-3.5 rounded-full border-2 border-dashed border-[#ff7043] inline-block"></span>브리지 노드 (SCC 간 연결)</span>
+      <span class="font-label-md text-label-md text-on-surface-variant uppercase text-[10px]">Legend</span>
+      <span class="flex items-center gap-1.5 text-[11px]"><span class="w-2 h-2 rounded-full bg-[#26c6da] inline-block"></span>Alive</span>
+      <span class="flex items-center gap-1.5 text-[11px]"><span class="w-2 h-2 rounded-full bg-[#ef5350] inline-block"></span>초기 제거</span>
+      <span class="flex items-center gap-1.5 text-[11px]"><span class="w-2 h-2 rounded-full bg-[#ff7043] inline-block"></span>연쇄 멸종 (이번 wave)</span>
+      <span class="flex items-center gap-1.5 text-[11px]"><span class="w-2 h-2 rounded-full bg-[#455a64] inline-block"></span>이전 멸종</span>
     </div>
   </div>
 </div>
@@ -390,10 +400,10 @@
 <script src="./js/data.js"></script>
 <script src="./js/graph-core.js"></script>
 <script src="./js/network-view.js"></script>
-<script src="./js/scc-analysis.js"></script>
-<script src="./js/view-router.js"></script>
 <script src="./js/metrics.js"></script>
 <script src="./js/comparison.js"></script>
+<script src="./js/wtecm-sim.js"></script>
+<script src="./js/view-router.js"></script>
 <script src="./js/main.js"></script>
 </body>
 </html>

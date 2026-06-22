@@ -21,6 +21,6 @@ function showView(v) {
     initComparison();
   } else if (v === 'analysis') {
     analysisEl.classList.remove('hidden'); navA.className = active;
-    initSccAnalysis();
+    initWtecmSim();
   }
 }

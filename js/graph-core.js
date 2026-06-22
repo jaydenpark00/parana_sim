@@ -38,7 +38,7 @@ function runCascade(graph, initialIds, threshold) {
       }
       // Python semantics: extinct when loss_ratio >= theta
       // loss_ratio = (initial - rem) / initial >= theta  ↔  rem/initial < (1-theta)
-      if (rem / n.initialPreyWeight < (1 - threshold)) next.add(n.id);
+      if (rem / n.initialPreyWeight <= (1 - threshold) + 1e-9) next.add(n.id);
     });
     newlyExtinct = new Set([...next].filter(id => !extinct.has(id)));
     if (newlyExtinct.size > 0) {
