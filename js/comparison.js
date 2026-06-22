@@ -1,8 +1,7 @@
 // ── Comparison state ───────────────────────────────────────────────────────
 let cmpWave = 0, cmpPlayInterval = null, cmpInitialized = false, cmpNodePos = null;
 let bcRanking, ci2Ranking, ci1Ranking, sccRanking, corehdRanking;
-let bcStates,   ci2States,  ci1States,  sccStates,  corehdStates;
-let bcExtMap,   ci2ExtMap,  ci1ExtMap,  sccExtMap,  corehdExtMap;
+let bcStates,  ci2States,  ci1States,  sccStates,  corehdStates;
 
 function initComparison() {
   if (cmpInitialized) return;
@@ -17,11 +16,6 @@ function initComparison() {
   ci1States     = buildWaveStates(ci1Ranking);
   sccStates     = buildWaveStates(sccRanking);
   corehdStates  = buildWaveStates(corehdRanking);
-  bcExtMap      = buildExtMap(bcStates);
-  ci2ExtMap     = buildExtMap(ci2States);
-  ci1ExtMap     = buildExtMap(ci1States);
-  sccExtMap     = buildExtMap(sccStates);
-  corehdExtMap  = buildExtMap(corehdStates);
   computeCmpPositions();
   // Set slider max — includes final summary wave
   const maxStep = getMaxStep();
@@ -54,7 +48,7 @@ function computeCmpPositions() {
   });
 }
 
-function cmpNodeColor(nodeId, states, extMap, wave) {
+function cmpNodeColor(nodeId, states, wave) {
   // Final summary wave — 2 colors only: survived vs extinct
   if (wave >= states.length) {
     const final = states[states.length - 1];
@@ -73,7 +67,7 @@ function cmpNodeColor(nodeId, states, extMap, wave) {
   return '#455a64';                            // previously extinct
 }
 
-function drawCmpPanel(prefix, states, extMap, ranking) {
+function drawCmpPanel(prefix, states, ranking) {
   const container = document.getElementById(prefix + '-graph-container');
   if (!container || !cmpNodePos) return;
   const W = container.clientWidth  || 500;
@@ -95,7 +89,7 @@ function drawCmpPanel(prefix, states, extMap, ranking) {
   // Nodes
   svg.append('g').selectAll('circle').data(graph.nodes).join('circle')
     .attr('r', 4)
-    .attr('fill', d => cmpNodeColor(d.id, states, extMap, cmpWave))
+    .attr('fill', d => cmpNodeColor(d.id, states, cmpWave))
     .attr('cx', d => px(d.id)).attr('cy', d => py(d.id))
     .attr('stroke','rgba(0,0,0,0.2)').attr('stroke-width', 0.5)
     .append('title').text(d => d.name);
@@ -178,11 +172,11 @@ function renderAllPanels() {
   const maxStep = getMaxStep();
   document.getElementById('wave-label').textContent = `${cmpWave} / ${maxStep}`;
   document.getElementById('wave-slider').value = cmpWave;
-  drawCmpPanel('bc',     bcStates,     bcExtMap,     bcRanking);
-  drawCmpPanel('ci2',    ci2States,    ci2ExtMap,    ci2Ranking);
-  drawCmpPanel('ci1',    ci1States,    ci1ExtMap,    ci1Ranking);
-  drawCmpPanel('scc',    sccStates,    sccExtMap,    sccRanking);
-  drawCmpPanel('corehd', corehdStates, corehdExtMap, corehdRanking);
+  drawCmpPanel('bc',     bcStates,     bcRanking);
+  drawCmpPanel('ci2',    ci2States,    ci2Ranking);
+  drawCmpPanel('ci1',    ci1States,    ci1Ranking);
+  drawCmpPanel('scc',    sccStates,    sccRanking);
+  drawCmpPanel('corehd', corehdStates, corehdRanking);
 }
 
 function getMaxStep() {

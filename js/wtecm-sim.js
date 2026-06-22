@@ -105,7 +105,7 @@ function wtecmNodeColor(nodeId) {
     if (wtecmSelectedIds.has(nodeId)) return '#ef5350';
     return graph.nodes[nodeId]?.isBasal ? '#4caf50' : '#26c6da';
   }
-  return cmpNodeColor(nodeId, wtecmStates, null, wtecmWave);
+  return cmpNodeColor(nodeId, wtecmStates, wtecmWave);
 }
 
 function updateWtecmColors() {
