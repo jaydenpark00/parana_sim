@@ -21,13 +21,20 @@ svg.append('defs').append('marker')
   .attr('markerWidth',6).attr('markerHeight',6).attr('orient','auto')
   .append('path').attr('d','M0,-4L8,0L0,4').attr('fill','rgba(161,212,148,0.3)');
 
-const linkLayer = svg.append('g').attr('class','links');
-const nodeLayer = svg.append('g').attr('class','nodes');
+const zoomG = svg.append('g').attr('class','zoom-g');
+const linkLayer = zoomG.append('g').attr('class','links');
+const nodeLayer = zoomG.append('g').attr('class','nodes');
+
+const zoom = d3.zoom()
+  .scaleExtent([0.2, 8])
+  .on('zoom', event => zoomG.attr('transform', event.transform));
+svg.call(zoom);
 
 function initGraph() {
   resize();
   linkLayer.selectAll('*').remove();
   nodeLayer.selectAll('*').remove();
+  svg.call(zoom.transform, d3.zoomIdentity.scale(1.2).translate(-width / 12, -height / 12));
 
   const edgesCopy = graph.edges.map(e => ({ ...e }));
 
@@ -93,6 +100,8 @@ function resetGraphView() {
     graph.nodes.forEach(n => { n.fx = null; n.fy = null; });
     simulation.alpha(0.5).restart();
   }
+  svg.transition().duration(400)
+    .call(zoom.transform, d3.zoomIdentity.scale(1.2).translate(-width / 12, -height / 12));
 }
 
 // ── Info Panel ──────────────────────────────────────────────────────────────

@@ -29,8 +29,19 @@ function buildWtecmD3() {
     .append('path').attr('d', 'M0,-4L8,0L0,4').attr('fill', 'rgba(161,212,148,0.25)');
 
   const edgesCopy = graph.edges.map(e => ({ ...e }));
-  const linkLayer = svg.append('g').attr('class', 'wtecm-links');
-  const nodeLayer = svg.append('g').attr('class', 'wtecm-nodes');
+
+  // Zoom container — all layers go inside this g
+  const zoomG = svg.append('g').attr('class', 'wtecm-zoom-g');
+  const linkLayer = zoomG.append('g').attr('class', 'wtecm-links');
+  const nodeLayer = zoomG.append('g').attr('class', 'wtecm-nodes');
+
+  // D3 zoom: scroll=zoom, drag on background=pan, initial 1.2x center
+  const zoom = d3.zoom()
+    .scaleExtent([0.2, 8])
+    .on('zoom', event => zoomG.attr('transform', event.transform));
+  svg.call(zoom);
+  // Apply initial 1.2x centered zoom
+  svg.call(zoom.transform, d3.zoomIdentity.scale(1.2).translate(-W / 12, -H / 12));
 
   // Force simulation
   wtecmSim = d3.forceSimulation(graph.nodes)
@@ -283,7 +294,7 @@ function wtecmClearSelection() {
 }
 
 // Also reset when wtecmToggleNode empties selection (handled inside wtecmToggleNode already)
-function wtecmReset()    { setWtecmWave(0); }
+function wtecmReset()    { wtecmClearSelection(); }
 function wtecmStepPrev() { setWtecmWave(wtecmWave - 1); }
 function wtecmStepNext() { setWtecmWave(wtecmWave + 1); }
 function wtecmEnd()      { if (wtecmStates) setWtecmWave(wtecmStates.length); }
