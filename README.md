@@ -1,6 +1,7 @@
 # EcosystemSim — Paraná River Food Web
 
-파라나 강 담수 생태계 먹이그물(FW_001)의 멸종 연쇄 시뮬레이션 및 네트워크 분석 도구.
+파라나 강 담수 생태계 먹이그물(FW_001)의 멸종 연쇄 시뮬레이션 및 네트워크 분석 웹 애플리케이션.  
+순수 HTML/CSS/JS로 구현되어 별도 서버 없이 GitHub Pages에서 실행된다.
 
 **Live Demo:** https://jaydenpark00.github.io/parana_sim/
 
@@ -8,9 +9,79 @@
 
 ## 스크린샷
 
-| 네트워크 그래프 | 연쇄 멸종 시뮬레이션 | Top-5 Extinction 비교 분석 |
-|---|---|---|
-| ![네트워크 그래프](images/2.png) | ![연쇄 멸종 시뮬레이션](images/1.png) | ![비교 분석](images/3.png) |
+### 네트워크 그래프
+![네트워크 그래프](images/2.png)
+
+### 연쇄 멸종 시뮬레이션
+![연쇄 멸종 시뮬레이션](images/1.png)
+
+### Top-5 Extinction 비교 분석
+![비교 분석](images/3.png)
+
+---
+
+## 기술 스택
+
+| 항목 | 내용 |
+|------|------|
+| 언어 | HTML5, CSS3, Vanilla JavaScript (ES6+) |
+| 그래프 시각화 | [D3.js v7](https://d3js.org/) — force simulation, zoom/pan, SVG 렌더링 |
+| 스타일링 | [Tailwind CSS v3](https://tailwindcss.com/) (CDN, JIT) |
+| 아이콘 | [Material Symbols](https://fonts.google.com/icons) (Google Fonts) |
+| 종 이미지 | Wikipedia REST API, iNaturalist API (런타임 fetch) |
+| 배포 | GitHub Pages (정적 호스팅) |
+
+외부 빌드 도구·번들러 없음. `index.html` 하나로 모든 탭이 동작한다.
+
+---
+
+## 탭 구성
+
+### 1. 네트워크 그래프 (`network-view.js`)
+- D3 force-directed simulation — 노드 드래그, 스크롤 줌/패닝 (초기 1.2×)
+- 노드 클릭 시 종 상세 정보 패널: Wikipedia 설명, IUCN 보전 등급, iNaturalist 사진, 먹이·포식자 가중치 바
+- 바살 종(기초 생산자)과 소비자 색상 구분
+
+### 2. 연쇄 멸종 시뮬레이션 (`wtecm-sim.js`)
+- 동일 D3 force simulation 기반 — 드래그·줌 지원
+- 그래프에서 최대 **5종** 클릭 선택 → 선택 즉시 WTECM cascade 실행
+- θ 슬라이더(0.1~1.0) 실시간 조절 → 선택 유지한 채 cascade 즉시 재계산
+- Wave 단계별 재생/정지/스텝/슬라이더 컨트롤
+- 선택 종 chip UI(개별 ✕ 해제), 멸종 로그 실시간 업데이트
+
+### 3. Top-5 Extinction 비교 분석 (`comparison.js`)
+- 5개 알고리즘(Kosaraju+SCC Frag, BC, CI l=1, CI l=2, CoreHD)이 선별한 top-5를 동시에 비교
+- 정적 레이아웃(force simulation 500 tick 사전 계산) — 5개 패널 동일 좌표 사용
+- 공통 wave 컨트롤로 5개 패널 동기 재생
+- 각 패널: 생존 종 수, 알고리즘 랭킹 chip, 멸종 로그
+
+---
+
+## 파일 구조
+
+```
+sim/
+├── index.html              # 단일 페이지 — 모든 탭 포함, 스크립트 로드 순서 중요
+├── css/
+│   └── style.css
+├── js/
+│   ├── data.js             # SPECIES_NAMES, RAW_EDGES, SELF_LOOP_WEIGHTS,
+│   │                       # WIKI_TITLES, SPECIES_DESC_KO
+│   ├── graph-core.js       # buildGraph(), runCascade()
+│   ├── metrics.js          # computeBC(), computeCI(), computeCI1(),
+│   │                       # computeSCCKosaraju(), computeSCCFragScore(),
+│   │                       # computeCoreHD(), buildWaveStates()
+│   ├── network-view.js     # 네트워크 그래프 탭 — D3 simulation, showInfo()
+│   ├── comparison.js       # 비교 분석 탭 — cmpNodeColor(), drawCmpPanel()
+│   ├── wtecm-sim.js        # 연쇄 멸종 탭 — buildWtecmD3(), wtecmToggleNode()
+│   ├── view-router.js      # showView() — 탭 전환
+│   ├── main.js             # initGraph() 호출
+│   └── tailwind-config.js
+└── images/
+```
+
+> **스크립트 로드 순서:** `data → graph-core → network-view → metrics → comparison → wtecm-sim → view-router → main`  
+> `wtecm-sim.js`가 `comparison.js`의 `cmpNodeColor()`, `shortName()`을 참조하므로 반드시 뒤에 로드해야 한다.
 
 ---
 
@@ -21,12 +92,10 @@
 - **엣지 형식:** `[prey_id, predator_id, weight]` — weight는 포식자의 총 먹이 의존도에서 해당 먹이가 차지하는 비율 (0~1)
 - **출처:** Parana River freshwater food web (FW_001)
 
-### 그래프 구성
-
-| 그래프 | 설명 | 용도 |
+| 그래프 | 구성 | 용도 |
 |--------|------|------|
-| G_wtecm | 181간선 + self-loop 4개 (`SELF_LOOP_WEIGHTS`) | WTECM 멸종 cascade |
-| G_alg | 181간선 (self-loop 제거) | 알고리즘 랭킹 (BC, CI, SCC, CoreHD) |
+| G_wtecm | 181간선 + self-loop 4개 | WTECM 멸종 cascade |
+| G_alg | 181간선 (self-loop 제거) | 알고리즘 랭킹 계산 |
 
 self-loop 4종: Hoplias malabaricus (0.2), Other piscivores (0.1), Rhaphiodon vulpinus (0.1), Serrasalmus marginatus (0.1)
 
@@ -34,125 +103,33 @@ self-loop 4종: Hoplias malabaricus (0.2), Other piscivores (0.1), Rhaphiodon vu
 
 ## 알고리즘
 
-### 1. 강한 연결 요소 (SCC) 탐지 — Kosaraju
+### Kosaraju + SCC Fragmentation Score
 
-원본 그래프와 전치(역방향) 그래프를 각각 DFS하는 2패스 알고리즘.
-
-1. **1패스:** 원본 그래프 DFS → 종료 순서(`finishOrder`) 기록
-2. **2패스:** 전치 그래프를 역 종료 순서로 DFS → 각 DFS 트리 = SCC
-
-**시간 복잡도:** O(V + E)
-
----
-
-### 2. SCC Fragmentation Score
-
-각 종을 제거했을 때 SCC 구조가 얼마나 파편화되는지 정량화. Python 파이프라인과 동일한 계산식 사용.
+원본·전치 그래프 2패스 DFS로 SCC 탐지. 각 종 제거 후 파편화 정도를 수치화.
 
 $$\text{Frag Score}(v) = \Delta N_{SCC} + \frac{L_{before} - L_{after}}{L_{before}}$$
 
-- ΔN_SCC: 제거 후 실제 SCC 수 − 기대 SCC 수 (v가 자명 SCC였으면 −1 보정, 비자명이면 보정 없음)
-- L_before / L_after: 제거 전후 최대 SCC 크기
+### Betweenness Centrality (BC)
 
-점수가 높을수록 제거 시 먹이그물 순환 구조가 크게 붕괴된다.
-
----
-
-### 3. 매개 중심성 (Betweenness Centrality, BC)
-
-Brandes 알고리즘으로 계산한 **유방향** 매개 중심성. Python `nx.betweenness_centrality(G_alg, weight=None)` 결과와 일치.
+Brandes 알고리즘, **유방향** 그래프. `nx.betweenness_centrality(G_alg, weight=None)`과 일치.
 
 $$BC(v) = \sum_{s \neq v \neq t} \frac{\sigma_{st}(v)}{\sigma_{st}} \cdot \frac{1}{(N-1)(N-2)}$$
 
-**시간 복잡도:** O(V · (V + E)) — BFS 순방향 후 스택 역전파
+### Collective Influence (CI l=1, l=2)
 
----
+$$CI_l(v) = (k_v - 1) \sum_{j \in \partial Ball(v,l)} (k_j - 1)$$
 
-### 4. 집단 영향력 (Collective Influence, CI)
+무방향 그래프 기준. ∂Ball(v, l): v로부터 정확히 l홉 거리의 노드 집합.
 
-Morone & Makse (2015). G_alg 무방향 그래프 기준.
+### CoreHD
 
-**CI l=2:**
-$$CI_2(v) = (k_v - 1) \sum_{j \in \partial Ball(v,2)} (k_j - 1)$$
+반복적 2-core 해체. 매 iteration마다 2-core 내 최고 degree 노드 제거 (tie → id 오름차순).
 
-**CI l=1:**
-$$CI_1(v) = (k_v - 1) \sum_{j \in \partial Ball(v,1)} (k_j - 1)$$
+### WTECM Cascade
 
-∂Ball(v, l): v로부터 정확히 l홉 거리의 노드 집합
+$$\frac{rem_v}{initial_v} \leq (1 - \theta) + \varepsilon \quad (\varepsilon = 10^{-9})$$
 
----
-
-### 5. CoreHD
-
-반복적 2-core 해체 기반 랭킹.
-
-```
-while 남은 노드가 있을 때:
-    현재 그래프에서 2-core 계산
-    2-core 내 degree 최대 노드 제거 (tie → id 오름차순)
-    2-core가 없으면 나머지를 degree 순 정리
-```
-
-제거된 순서가 핵심종 랭킹 (먼저 제거될수록 score 높음).
-
----
-
-### 6. 연쇄 멸종 시뮬레이션 (WTECM)
-
-먹이 의존도 기반 반복 멸종 모델. θ = 0.7.
-
-**멸종 조건:** 먹이 손실 비율이 θ 이상이면 멸종
-
-$$\frac{rem_v}{initial_v} \leq (1 - \theta) + \varepsilon \quad (\varepsilon = 10^{-9}, \text{ 즉 손실률} \geq \theta)$$
-
-self-loop 보유 종은 자신이 살아있는 동안 self-loop weight를 rem에 항상 포함.
-
-```
-extinct ← initial_removal
-repeat:
-    for each non-extinct, non-basal node v:
-        rem = Σ w(u→v) for u ∉ extinct
-        rem += SELF_LOOP_WEIGHTS[v]  # if exists
-        if rem / v.initialPreyWeight <= (1 - θ) + 1e-9:
-            mark v extinct (next wave)
-until no new extinctions
-```
-
----
-
-### 7. Top-5 Extinction 비교 분석
-
-5개 지표로 각각 상위 5종을 제거한 뒤 WTECM cascade(θ=0.7)를 실행해 결과를 비교한다.
-
-| 지표 | 기반 그래프 | 특징 |
-|------|-------------|------|
-| Kosaraju + SCC Frag | G_alg 유방향 | SCC 구조 파편화 최대화 |
-| BC | G_alg 유방향 | 유방향 최단 경로 병목 탐지 |
-| CI l=1 | G_alg 무방향 | 1홉 이웃 기반 (빠른 근사) |
-| CI l=2 | G_alg 무방향 | 2홉 이웃 기반 네트워크 분리 |
-| CoreHD | G_alg 무방향 | 2-core 반복 해체 |
-
----
-
-## 디렉토리 구조
-
-```
-sim/
-├── index.html
-├── css/
-│   └── style.css
-├── js/
-│   ├── data.js           # 종 목록, RAW_EDGES, SELF_LOOP_WEIGHTS, Wikipedia 제목, 한국어 설명
-│   ├── graph-core.js     # buildGraph(), runCascade()
-│   ├── metrics.js        # computeBC(), computeCI(), computeCI1(), computeSCCFragScore(),
-│   │                     # computeSCCKosaraju(), computeCoreHD(), buildWaveStates()
-│   ├── network-view.js   # D3 force-directed 그래프, 종 정보 패널 (Wikipedia/iNaturalist)
-│   ├── comparison.js     # Top-5 Extinction 비교 분석 탭 (5개 알고리즘 동시 비교)
-│   ├── wtecm-sim.js      # WTECM 연쇄 멸종 시뮬레이션 탭 (최대 5종 선택, θ 조절)
-│   ├── view-router.js    # 탭 전환
-│   └── tailwind-config.js
-└── images/
-```
+staged cascade 방식 — 동일 wave의 멸종 대상을 모두 계산한 뒤 한 번에 반영.
 
 ---
 
